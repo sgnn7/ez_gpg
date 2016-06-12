@@ -1,4 +1,4 @@
 # ez_gpg
 Personal take on what a GPG UI should look like
 
-PS: There's not even enough code here to launch anything for right now so don't try to use it :)
+PS: There's not much here besides a window that can list your GPG keys (for now)
