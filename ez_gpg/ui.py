@@ -61,18 +61,18 @@ class EzGpg(Gtk.Application):
 
         self._window = None
 
-    def do_startup(self):
-        print("Starting up...")
-        Gtk.Application.do_startup(self)
-
-        actions = [
+        self._actions = [
             ('about', self.on_about),
             ('quit', self.on_quit),
         ]
 
+    def do_startup(self):
+        print("Starting up...")
+        Gtk.Application.do_startup(self)
+
         menu = Gio.Menu()
 
-        for action, callback in actions:
+        for action, callback in self._actions:
             menu.append(action.capitalize(), "app.%s" % action)
 
             simple_action = Gio.SimpleAction.new(action, None)
