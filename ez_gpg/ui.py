@@ -10,11 +10,8 @@ class GpgKeyList(Gtk.ComboBox):
         Gtk.ComboBox.__init__(self)
 
         gpg_keys_list = Gtk.ListStore(str, str)
-        for key in self._get_gpg_keys():
-            key_id = key['keyid']
-            key_name = "%s %s" % (key['keyid'], key['uids'][0])
-
-            gpg_keys_list.append([key_id, key_name])
+        for key_id, key_name, key_friendly_name in self._get_gpg_keys():
+            gpg_keys_list.append([key_id, key_friendly_name])
 
         cell = Gtk.CellRendererText()
         self.pack_start(cell, True)
@@ -26,7 +23,19 @@ class GpgKeyList(Gtk.ComboBox):
     def _get_gpg_keys(self):
         gpg = gnupg.GPG()
 
-        return gpg.list_keys()
+        keys = []
+
+        for key in gpg.list_keys():
+            key_id = key['keyid']
+            key_friendly_name = key['uids'][0]
+
+            key_name = "%s %s" % (key_id, key_friendly_name)
+
+            keys.append((key_id, key_name, key_friendly_name))
+
+        keys.sort(key=lambda key_tuple: key_tuple[2])
+
+        return keys
 
 
 class MainWindow(Gtk.Window):
