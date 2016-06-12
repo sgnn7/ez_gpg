@@ -1,4 +1,5 @@
 import gi
+import gnupg  # Requires python3-gnupg
 
 gi.require_version('Gtk', '3.0')
 
@@ -12,15 +13,18 @@ class MainWindow(Gtk.Window):
         self.set_border_width(30)
 
         gpg_keys_list = Gtk.ListStore(str, str)
-        gpg_keys_list.append(["abc", "Key1"])
-        gpg_keys_list.append(["abc", "Key1"])
-        gpg_keys_list.append(["abc", "Key1"])
-        gpg_keys_list.append(["abc", "Key1"])
+        for key in self._get_gpg_keys():
+            gpg_keys_list.append([key['keyid'], "%s %s" % (key['keyid'], key['uids'][0])])
 
         gpg_key_combo_box = Gtk.ComboBox.new_with_model_and_entry(gpg_keys_list)
         gpg_key_combo_box.set_entry_text_column(1)
 
         self.add(gpg_key_combo_box)
+
+    def _get_gpg_keys(self):
+        gpg = gnupg.GPG()
+
+        return gpg.list_keys()
 
 
 class EzGpg(Gtk.Window):
