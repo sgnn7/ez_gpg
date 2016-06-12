@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 
+import sys
+
 from ez_gpg.ui import EzGpg
 
 if __name__ == '__main__':
     print("Starting...")
-    EzGpg().launch()
+    app = EzGpg()
+    exit_code = app.run(sys.argv)
+
     print("Exiting...")
+    sys.exit(exit_code)
