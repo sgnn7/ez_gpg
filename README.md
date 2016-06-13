@@ -6,6 +6,7 @@ PS: There's not much here besides a window that can list your GPG keys (for now)
 Preliminary workflow (really bad scaling):
 
 Main Window:
+```
 ----------------------------
 |     Encrypt | Decrypt    |
 |       -------------      |
@@ -13,8 +14,10 @@ Main Window:
 |                          |
 |         [Key Mgmt]       |
 ----------------------------
+```
 
 Encryption:
+```
 ----------------------------
 |   -------------------    |
 |   |   Files (DnD)   |    |
@@ -25,8 +28,10 @@ Encryption:
 |   -------------------    |
 |                [Encrypt] |
 ----------------------------
+```
 
 Decryption:
+```
 ----------------------------
 |   -------------------    |
 |   |   Files (DnD)   |    |
@@ -37,3 +42,4 @@ Decryption:
 |   -------------------    |
 |                [Decrypt] |
 ----------------------------
+```
