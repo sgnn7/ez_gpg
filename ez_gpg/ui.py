@@ -1,13 +1,17 @@
 import gi
 import gnupg  # Requires python3-gnupg
+import os
 
 gi.require_version('Gtk', '3.0')
+gi.require_version('Gdk', '3.0')
 
-from gi.repository import Gio, GLib, Gtk
+from gi.repository import Gdk, Gio, GLib, Gtk
 
 class GpgKeyList(Gtk.ComboBox):
     def __init__(self):
         Gtk.ComboBox.__init__(self)
+
+        self.set_name('gpg_key_list')
 
         gpg_keys_list = Gtk.ListStore(str, str)
         for key_id, key_name, key_friendly_name in self._get_gpg_keys():
@@ -42,8 +46,19 @@ class MainWindow(Gtk.Window):
     def __init__(self, app):
         Gtk.Window.__init__(self, title="EZ GPG", application = app)
 
-        self.set_border_width(30)
+        self.set_border_width(20)
+        self.set_name('main_window')
         self.set_position(Gtk.WindowPosition.CENTER)
+
+        print("Loading CSS file...")
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        css_file = Gio.File.new_for_uri('file:///%s/application.css' % current_dir)
+        css_provider = Gtk.CssProvider()
+        css_provider.load_from_file(css_file)
+
+        screen = Gdk.Screen.get_default()
+        style_context = Gtk.StyleContext()
+        style_context.add_provider_for_screen(screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)
 
         gpg_key_combo = GpgKeyList()
 
