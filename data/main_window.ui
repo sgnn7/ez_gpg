@@ -13,6 +13,10 @@
       <object class="GtkBox" id="main_window_top_button_row">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="margin_left">5</property>
+        <property name="margin_right">5</property>
+        <property name="margin_top">5</property>
+        <property name="margin_bottom">5</property>
         <property name="homogeneous">True</property>
         <child>
           <object class="GtkButton" id="btn_encrypt">
@@ -23,6 +27,7 @@
             <property name="receives_default">True</property>
             <property name="halign">center</property>
             <property name="valign">center</property>
+            <property name="margin_right">5</property>
             <property name="hexpand">True</property>
             <property name="vexpand">True</property>
             <property name="action_name">encrypt_content</property>
@@ -42,6 +47,7 @@
             <property name="receives_default">True</property>
             <property name="halign">center</property>
             <property name="valign">center</property>
+            <property name="margin_left">5</property>
             <property name="hexpand">True</property>
             <property name="vexpand">True</property>
             <property name="action_name">decrypt_content</property>
@@ -64,6 +70,10 @@
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="opacity">0.95999999999999996</property>
+        <property name="margin_left">5</property>
+        <property name="margin_right">5</property>
+        <property name="margin_top">5</property>
+        <property name="margin_bottom">5</property>
         <property name="homogeneous">True</property>
         <child>
           <object class="GtkButton" id="btn_sign">
@@ -74,8 +84,9 @@
             <property name="receives_default">True</property>
             <property name="halign">center</property>
             <property name="valign">center</property>
-            <property name="hexpand">False</property>
-            <property name="vexpand">False</property>
+            <property name="margin_right">5</property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
             <property name="action_name">sign_content</property>
           </object>
           <packing>
@@ -93,8 +104,9 @@
             <property name="receives_default">True</property>
             <property name="halign">center</property>
             <property name="valign">center</property>
-            <property name="hexpand">False</property>
-            <property name="vexpand">False</property>
+            <property name="margin_left">5</property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
             <property name="action_name">verify_content</property>
           </object>
           <packing>
