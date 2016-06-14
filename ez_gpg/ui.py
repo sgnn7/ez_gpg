@@ -60,10 +60,11 @@ class MainWindow(Gtk.Window):
         style_context = Gtk.StyleContext()
         style_context.add_provider_for_screen(screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)
 
-        gpg_key_combo = GpgKeyList()
+        builder = Gtk.Builder()
+        builder.add_from_file('data/main_window.ui')
 
-        self.add(gpg_key_combo)
-
+        # gpg_key_combo = GpgKeyList()
+        self.add(builder.get_object('main_window_vbox'))
 
 class EzGpg(Gtk.Application):
     def __init__(self, *args, **kwargs):
