@@ -1,11 +1,12 @@
 import gi
-import gnupg  # Requires python3-gnupg
 import os
 
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
 
 from gi.repository import Gdk, Gio, GLib, Gtk
+
+from .utils import EzGpgUtils
 
 class GpgKeyList(Gtk.ComboBox):
     def __init__(self):
@@ -14,7 +15,7 @@ class GpgKeyList(Gtk.ComboBox):
         self.set_name('gpg_key_list')
 
         gpg_keys_list = Gtk.ListStore(str, str)
-        for key_id, key_name, key_friendly_name in self._get_gpg_keys():
+        for key_id, key_name, key_friendly_name in EzGpgUtils.get_gpg_keys():
             gpg_keys_list.append([key_id, key_friendly_name])
 
         cell = Gtk.CellRendererText()
@@ -23,23 +24,6 @@ class GpgKeyList(Gtk.ComboBox):
 
         self.set_model(gpg_keys_list)
         self.set_entry_text_column(1)
-
-    def _get_gpg_keys(self):
-        gpg = gnupg.GPG()
-
-        keys = []
-
-        for key in gpg.list_keys():
-            key_id = key['keyid']
-            key_friendly_name = key['uids'][0]
-
-            key_name = "%s %s" % (key_id, key_friendly_name)
-
-            keys.append((key_id, key_name, key_friendly_name))
-
-        keys.sort(key=lambda key_tuple: key_tuple[2])
-
-        return keys
 
 class GenericWindow(Gtk.Window):
     def __init__(self, app, window_name, title):
@@ -67,8 +51,11 @@ class EncryptWindow(GenericWindow):
         builder = Gtk.Builder()
         builder.add_from_file('data/encrypt_window.ui')
 
-        key_row = builder.get_object('encrypt_window_middle_button_row')
-        key_row.add(GpgKeyList())
+        key_list_box = builder.get_object('lst_key_selection')
+
+        for key_id, key_name, key_friendly_name in EzGpgUtils.get_gpg_keys():
+            key_row = Gtk.CheckButton(key_friendly_name)
+            key_list_box.add(key_row)
 
         self.add(builder.get_object('encrypt_window_vbox'))
 
@@ -89,10 +76,12 @@ class EzGpg(Gtk.Application):
             ('about', True, self.on_about),
             ('quit',  True, self.on_quit),
 
-            ('encrypt_content', False, self.show_encrypt_ui),
-            ('decrypt_content', False, self.show_decrypt_ui),
-            ('sign_content',    False, self.show_sign_ui),
-            ('verify_content',  False, self.show_verify_ui),
+            ('show_encrypt_ui', False, self.show_encrypt_ui),
+            ('encrypt_window.do_encrypt', False, self.do_encrypt),
+
+            ('show_decrypt_ui', False, self.show_decrypt_ui),
+            ('show_sign_ui',    False, self.show_sign_ui),
+            ('show_verify_ui',  False, self.show_verify_ui),
             ('key_management',  False, self.show_key_management_ui),
         ]
 
@@ -142,6 +131,10 @@ class EzGpg(Gtk.Application):
         self._encrypt_window.show_all()
 
         self.add_window(self._encrypt_window)
+
+    def do_encrypt(self, action = None, param = None):
+        print("Clicked Encrypt Content button")
+        self._show_unimplemented_message_box()
 
     def show_decrypt_ui(self, action = None, param = None):
         print("Clicked Decrypt button")

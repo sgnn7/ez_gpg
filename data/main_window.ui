@@ -30,7 +30,7 @@
             <property name="margin_right">5</property>
             <property name="hexpand">True</property>
             <property name="vexpand">True</property>
-            <property name="action_name">app.encrypt_content</property>
+            <property name="action_name">app.show_encrypt_ui</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -50,7 +50,7 @@
             <property name="margin_left">5</property>
             <property name="hexpand">True</property>
             <property name="vexpand">True</property>
-            <property name="action_name">app.decrypt_content</property>
+            <property name="action_name">app.show_decrypt_ui</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -87,7 +87,7 @@
             <property name="margin_right">5</property>
             <property name="hexpand">True</property>
             <property name="vexpand">True</property>
-            <property name="action_name">app.sign_content</property>
+            <property name="action_name">app.show_sign_ui</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -107,7 +107,7 @@
             <property name="margin_left">5</property>
             <property name="hexpand">True</property>
             <property name="vexpand">True</property>
-            <property name="action_name">app.verify_content</property>
+            <property name="action_name">app.show_verify_ui</property>
           </object>
           <packing>
             <property name="expand">False</property>

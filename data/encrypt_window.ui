@@ -13,15 +13,19 @@
       <object class="GtkBox" id="encrypt_window_top_row">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="valign">start</property>
         <property name="margin_left">5</property>
         <property name="margin_right">5</property>
         <property name="margin_top">5</property>
         <property name="margin_bottom">5</property>
+        <property name="vexpand">False</property>
         <property name="homogeneous">True</property>
         <child>
           <object class="GtkFileChooserButton" id="fc_main">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="valign">start</property>
+            <property name="vexpand">False</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -38,16 +42,43 @@
     </child>
     <child>
       <object class="GtkBox" id="encrypt_window_middle_button_row">
+        <property name="width_request">400</property>
+        <property name="height_request">200</property>
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="opacity">0.95999999999999996</property>
         <property name="margin_left">5</property>
         <property name="margin_right">5</property>
         <property name="margin_top">5</property>
         <property name="margin_bottom">5</property>
+        <property name="hexpand">True</property>
+        <property name="vexpand">True</property>
         <property name="homogeneous">True</property>
+        <property name="baseline_position">top</property>
         <child>
-          <placeholder/>
+          <object class="GtkScrolledWindow" id="scrolledwindow1">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="shadow_type">in</property>
+            <child>
+              <object class="GtkViewport" id="viewport1">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <child>
+                  <object class="GtkListBox" id="lst_key_selection">
+                    <property name="name">lst_key_selection</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="selection_mode">multiple</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
         </child>
       </object>
       <packing>
@@ -66,7 +97,7 @@
         <property name="halign">center</property>
         <property name="valign">center</property>
         <property name="margin_top">6</property>
-        <property name="margin_bottom">8</property>
+        <property name="margin_bottom">6</property>
         <property name="hexpand">True</property>
         <property name="vexpand">False</property>
         <property name="action_name">app.encrypt_window.do_encrypt</property>
@@ -74,7 +105,7 @@
       <packing>
         <property name="expand">False</property>
         <property name="fill">True</property>
-        <property name="padding">20</property>
+        <property name="padding">10</property>
         <property name="position">2</property>
       </packing>
     </child>
