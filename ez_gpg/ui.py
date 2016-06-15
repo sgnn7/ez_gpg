@@ -41,29 +41,34 @@ class GpgKeyList(Gtk.ComboBox):
 
         return keys
 
+class GenericWindow(Gtk.Window):
+    def __init__(self, app, window_name, title):
+        window_title = "EZ GPG - %s" % title
 
-class MainWindow(Gtk.Window):
-    def __init__(self, app):
-        Gtk.Window.__init__(self, title="EZ GPG", application = app)
+        Gtk.Window.__init__(self, title = window_title, application = app)
 
         self.set_border_width(20)
-        self.set_name('main_window')
+        self.set_name(window_name)
         self.set_position(Gtk.WindowPosition.CENTER)
 
-        print("Loading CSS file...")
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        css_file = Gio.File.new_for_uri('file:///%s/application.css' % current_dir)
-        css_provider = Gtk.CssProvider()
-        css_provider.load_from_file(css_file)
-
-        screen = Gdk.Screen.get_default()
-        style_context = Gtk.StyleContext()
-        style_context.add_provider_for_screen(screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)
+class MainWindow(GenericWindow):
+    def __init__(self, app):
+        super().__init__(app, 'main_window', "Home")
 
         builder = Gtk.Builder()
         builder.add_from_file('data/main_window.ui')
 
         self.add(builder.get_object('main_window_vbox'))
+
+class EncryptWindow(GenericWindow):
+    def __init__(self, app):
+        super().__init__(app, 'encrypt_window', "Encrypt")
+
+        builder = Gtk.Builder()
+        builder.add_from_file('data/encrypt_window.ui')
+
+        self.add(builder.get_object('encrypt_window_vbox'))
+
 
 class EzGpg(Gtk.Application):
     def __init__(self, *args, **kwargs):
@@ -87,6 +92,7 @@ class EzGpg(Gtk.Application):
             ('key_management',  False, self.show_key_management_ui),
         ]
 
+
     def do_startup(self):
         print("Starting up...")
         Gtk.Application.do_startup(self)
@@ -106,6 +112,17 @@ class EzGpg(Gtk.Application):
     def do_activate(self):
         print("Activating...")
         if not self._window:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            css_file = Gio.File.new_for_uri('file:///%s/application.css' % current_dir)
+            css_provider = Gtk.CssProvider()
+            css_provider.load_from_file(css_file)
+
+            screen = Gdk.Screen.get_default()
+            style_context = Gtk.StyleContext()
+            style_context.add_provider_for_screen(screen,
+                                                  css_provider,
+                                                  Gtk.STYLE_PROVIDER_PRIORITY_USER)
+
             self._window = MainWindow(self)
             self._window.show_all()
 
