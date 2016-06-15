@@ -63,7 +63,6 @@ class MainWindow(Gtk.Window):
         builder = Gtk.Builder()
         builder.add_from_file('data/main_window.ui')
 
-        # gpg_key_combo = GpgKeyList()
         self.add(builder.get_object('main_window_vbox'))
 
 class EzGpg(Gtk.Application):
@@ -78,8 +77,14 @@ class EzGpg(Gtk.Application):
         self._window = None
 
         self._actions = [
-            ('about', self.on_about),
-            ('quit', self.on_quit),
+            ('about', True, self.on_about),
+            ('quit',  True, self.on_quit),
+
+            ('encrypt_content', False, self.show_encrypt_ui),
+            ('decrypt_content', False, self.show_decrypt_ui),
+            ('sign_content',    False, self.show_sign_ui),
+            ('verify_content',  False, self.show_verify_ui),
+            ('key_management',  False, self.show_key_management_ui),
         ]
 
     def do_startup(self):
@@ -88,8 +93,9 @@ class EzGpg(Gtk.Application):
 
         menu = Gio.Menu()
 
-        for action, callback in self._actions:
-            menu.append(action.capitalize(), "app.%s" % action)
+        for action, is_menu_item, callback in self._actions:
+            if is_menu_item:
+                menu.append(action.capitalize(), "app.%s" % action)
 
             simple_action = Gio.SimpleAction.new(action, None)
             simple_action.connect('activate', callback)
@@ -106,6 +112,37 @@ class EzGpg(Gtk.Application):
         self.add_window(self._window)
 
         self._window.present()
+
+    def show_encrypt_ui(self, action = None, param = None):
+        print("Clicked Encrypt button")
+        self._show_unimplemented_message_box()
+
+    def show_decrypt_ui(self, action = None, param = None):
+        print("Clicked Decrypt button")
+        self._show_unimplemented_message_box()
+
+    def show_sign_ui(self, action = None, param = None):
+        print("Clicked Sign button")
+        self._show_unimplemented_message_box()
+
+    def show_verify_ui(self, action = None, param = None):
+        print("Clicked Verify button")
+        self._show_unimplemented_message_box()
+
+    def show_key_management_ui(self, action = None, param = None):
+        print("Clicked Key Management button")
+        self._show_unimplemented_message_box()
+
+    def _show_unimplemented_message_box(self):
+        dialog = Gtk.MessageDialog(self._window, 0,
+                                   Gtk.MessageType.WARNING,
+                                   Gtk.ButtonsType.OK,
+                                   "Not Implemented")
+        dialog.format_secondary_text("This functionality is not yet implemented!")
+
+        response = dialog.run()
+
+        dialog.destroy()
 
     def do_command_line(self, command_line):
         # options = command_line.get_options_dict()
