@@ -67,6 +67,9 @@ class EncryptWindow(GenericWindow):
         builder = Gtk.Builder()
         builder.add_from_file('data/encrypt_window.ui')
 
+        key_row = builder.get_object('encrypt_window_middle_button_row')
+        key_row.add(GpgKeyList())
+
         self.add(builder.get_object('encrypt_window_vbox'))
 
 
@@ -80,6 +83,7 @@ class EzGpg(Gtk.Application):
         GLib.set_prgname('EZ GPG')
 
         self._window = None
+        self._encrypt_window = None
 
         self._actions = [
             ('about', True, self.on_about),
@@ -132,7 +136,12 @@ class EzGpg(Gtk.Application):
 
     def show_encrypt_ui(self, action = None, param = None):
         print("Clicked Encrypt button")
-        self._show_unimplemented_message_box()
+        self._encrypt_window = EncryptWindow(self)
+
+        # self._encrypt_window.connect("delete-event", delete_window)
+        self._encrypt_window.show_all()
+
+        self.add_window(self._encrypt_window)
 
     def show_decrypt_ui(self, action = None, param = None):
         print("Clicked Decrypt button")
