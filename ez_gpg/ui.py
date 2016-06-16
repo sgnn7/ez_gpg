@@ -28,7 +28,7 @@ class GpgKeyList(Gtk.ComboBox):
         self.set_entry_text_column(1)
 
 class GenericWindow(Gtk.Window):
-    def __init__(self, app, window_name, title):
+    def __init__(self, app, window_name, title, ):
         window_title = "EZ GPG - %s" % title
 
         self._app = app
@@ -38,6 +38,12 @@ class GenericWindow(Gtk.Window):
         self.set_border_width(20)
         self.set_name(window_name)
         self.set_position(Gtk.WindowPosition.CENTER)
+
+        # TODO: We need our own icon
+        try:
+            self.set_icon_name("seahorse")
+        except:
+            pass
 
         self.connect("delete-event", self._close_window)
 
@@ -79,15 +85,18 @@ class MainWindow(GenericWindow):
                  ('key_management',  self.show_key_management_ui),
                ]
 
-    def show_encrypt_ui(self, action = None, param = None):
-        print("Clicked Encrypt button")
-        child_window = EncryptWindow(self._app)
+    def _show_window(self, clazz):
+        child_window = clazz(self._app)
         child_window.set_modal(True)
         child_window.set_transient_for(self)
 
-        child_window.show_all()
+        child_window.present()
 
         self._app.add_window(child_window)
+
+    def show_encrypt_ui(self, action = None, param = None):
+        print("Clicked Encrypt button")
+        self._show_window(EncryptWindow)
 
     def show_decrypt_ui(self, action = None, param = None):
         print("Clicked Decrypt button")
@@ -99,7 +108,7 @@ class MainWindow(GenericWindow):
 
     def show_verify_ui(self, action = None, param = None):
         print("Clicked Verify button")
-        EzGpgUtils.show_unimplemented_message_box(self)
+        self._show_window(VerifyWindow)
 
     def show_key_management_ui(self, action = None, param = None):
         print("Clicked Key Management button")
@@ -114,12 +123,21 @@ class EncryptWindow(GenericWindow):
 
         self._key_list_box = builder.get_object('lst_key_selection')
         self._file_chooser = builder.get_object('fc_main')
+        self._armor_output_check_box = builder.get_object('chk_armor')
+        self._encrypt_spinner = builder.get_object('spn_encrypt')
+        self._encrypt_button = builder.get_object('btn_do_encrypt')
+
+        # XXX: Armor param doesn't seem to produce armored output so we
+        #      disable this for now
+        self._armor_output_check_box.set_visible(False)
 
         for key_id, key_name, key_friendly_name in EzGpgUtils.get_gpg_keys():
             key_row = Gtk.CheckButton(key_friendly_name)
             key_row.set_name(key_id)
 
             self._key_list_box.add(key_row)
+
+        self._key_list_box.show_all()
 
         self.add(builder.get_object('encrypt_window_vbox'))
 
@@ -132,8 +150,11 @@ class EncryptWindow(GenericWindow):
 
         # TODO: Make this event driven vs post verification
         print(" - Checking source file(s)")
-        filename = self._file_chooser.get_filename()
-        if not filename:
+
+        filenames = self._file_chooser.get_filenames()
+        print("   - Filenames:", filenames)
+
+        if len(filenames) < 1:
             self._show_error_message("File not selected!")
             return
 
@@ -152,7 +173,59 @@ class EncryptWindow(GenericWindow):
             self._show_error_message("No key selected!")
             return
 
-        EzGpgUtils.encrypt_file(self, filename, selected_keys)
+        use_armor = self._armor_output_check_box.get_active()
+        print("Armor output: %s" % use_armor)
+
+        # Disable encrypt button if we're in the middle of encryption
+        print(" - Locking UI and showing spinner.")
+        self._encrypt_button.set_sensitive(False)
+        self._encrypt_spinner.start()
+
+        # XXX / TODO: We're having our main thread blocked by gnupg work
+        #             so we need to add threading at some point.
+        def finished_encryption_cb(self):
+            print(" - Finished. Stopping spinner.")
+            self._encrypt_spinner.stop()
+
+        EzGpgUtils.encrypt_files(self, filenames, selected_keys, use_armor,
+                                 callback = finished_encryption_cb)
+
+        self.destroy()
+
+class VerifyWindow(GenericWindow):
+    def __init__(self, app):
+        super().__init__(app, 'verify_window', "Verify Signature")
+
+        builder = Gtk.Builder()
+        builder.add_from_file('data/verify_window.ui')
+
+        self._source_file = builder.get_object('fc_source_file')
+        self._signature_file = builder.get_object('fc_signature_file')
+        self._verify_button = builder.get_object('btn_do_verify')
+
+        self.add(builder.get_object('verify_window_vbox'))
+
+    def _get_actions(self):
+        return [ ('verify_window.do_verify', self.do_verify),
+               ]
+
+    def do_verify(self, action = None, param = None):
+        print("Clicked Verify Signature button")
+
+        # TODO: Make this event driven vs post verification
+        print(" - Checking source file(s)")
+        source_file = self._source_file.get_filename()
+        if not source_file:
+            self._show_error_message("File not selected!")
+            return
+
+        signature_file = self._signature_file.get_filename()
+        print(" - Using signature file:", signature_file)
+
+        # Disable verify button if we're in the middle of verification
+        self._verify_button.set_sensitive(False)
+
+        EzGpgUtils.verify_file(self, source_file, signature_file)
 
         self.destroy()
 

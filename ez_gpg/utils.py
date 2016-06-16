@@ -25,20 +25,84 @@ class EzGpgUtils(object):
         return keys
 
     @staticmethod
-    def encrypt_file(window, filename, key_ids):
-        dest_filename = "%s.gpg" % filename
-        print("Encrypting %s to %s!" % (filename, dest_filename))
+    def encrypt_files(window, filenames, key_ids, use_armor = True, callback = None):
+        conversion_list = []
+        for filename in filenames:
+            dest_filename = "%s.gpg" % filename
+            conversion_list.append((filename, dest_filename))
+
+        print(" - Armor:", use_armor)
 
         gpg = gnupg.GPG()
-        with open(filename, 'rb') as src_file:
+
+        for filename, dest_filename in conversion_list:
+            print("Encrypting %s to %s" % (filename, dest_filename))
+
+            with open(filename, 'rb') as src_file:
                 status = gpg.encrypt_file(src_file,
                                           recipients=key_ids,
+                                          always_trust=True,   # XXX: No key mgmt = no point
+                                          armor=use_armor,     # XXX: This doesn't seem to work :(
                                           output=dest_filename)
+            print("Status: %s" % status)
 
-        print("Encrypted %s to %s!" % (filename, dest_filename))
+            print("Encrypted %s to %s" % (filename, dest_filename))
+
+        # Stop spinner when we return
+        if callback:
+            callback(window)
+
         EzGpgUtils.show_dialog(window,
-                               "Completed!\nFile is at %s" % dest_filename,
+                               "Completed!",
                                message_type = Gtk.MessageType.INFO)
+
+    @staticmethod
+    def verify_file(window, source_filename, signature_filename = None):
+        gpg = gnupg.GPG()
+        print("Verifying file:", source_filename)
+
+        verification = None
+
+        # XXX: python-gnupg API for this is lame
+        if signature_filename:
+            with open(signature_filename, 'rb') as sig_file:
+                print(" - Verifying with signature: ", signature_filename)
+                verification = gpg.verify_file(sig_file, source_filename)
+        else:
+            with open(source_filename, 'rb') as src_file:
+                verification = gpg.verify_file(src_file)
+
+        print(" - Verification data:", verification)
+        print(" - Fingerprint:", verification.fingerprint)
+        print(" - Username:", verification.username)
+        print(" - Key ID:", verification.key_id)
+
+        trust_level = None
+        if verification.trust_level:
+            print("Trust level:", verification.trust_text)
+
+        dialog_title = "Verified!"
+        message_text = "File %s verified!\nTrust = %s" % (source_filename,
+                                                         verification.trust_text)
+        message_type = Gtk.MessageType.INFO
+
+        if not verification.valid:
+            dialog_title = "BAD SIGNATURE!"
+            message_text = "Signature for %s was verified and it was bad!" % source_filename
+            message_type = Gtk.MessageType.ERROR
+        elif not verification.trust_level:
+            dialog_title = "NOT VERIFIED!"
+            message_text = "Signature for %s CANNOT be verified!\nIt was either not included or was bad!" % source_filename
+            message_type = Gtk.MessageType.ERROR
+        elif verification.trust_level < verification.TRUST_MARGINAL:
+            dialog_title = "NOT TRUSTED ENOGUH!"
+            message_text = "Signature for %s was verified but you don't trusit it enough!" % source_filename
+            message_type = Gtk.MessageType.ERROR
+
+        EzGpgUtils.show_dialog(window,
+                               message_text,
+                               title = dialog_title,
+                               message_type = message_type)
 
     def show_unimplemented_message_box(window):
         EzGpgUtils.show_dialog(window,

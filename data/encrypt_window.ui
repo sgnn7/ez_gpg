@@ -21,11 +21,11 @@
         <property name="vexpand">False</property>
         <property name="homogeneous">True</property>
         <child>
-          <object class="GtkFileChooserButton" id="fc_main">
+          <object class="GtkFileChooserWidget" id="fc_main">
+            <property name="width_request">600</property>
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="valign">start</property>
-            <property name="vexpand">False</property>
+            <property name="select_multiple">True</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -41,7 +41,7 @@
       </packing>
     </child>
     <child>
-      <object class="GtkBox" id="encrypt_window_middle_button_row">
+      <object class="GtkBox" id="encrypt_window_middle_row">
         <property name="width_request">400</property>
         <property name="height_request">200</property>
         <property name="visible">True</property>
@@ -88,24 +88,66 @@
       </packing>
     </child>
     <child>
-      <object class="GtkButton" id="btn_do_encrypt">
-        <property name="label" translatable="yes">Encrypt</property>
-        <property name="name">btn_do_encrypt</property>
+      <object class="GtkBox" id="encrypt_window_bottom_row">
         <property name="visible">True</property>
-        <property name="can_focus">True</property>
-        <property name="receives_default">True</property>
-        <property name="halign">center</property>
-        <property name="valign">center</property>
-        <property name="margin_top">6</property>
-        <property name="margin_bottom">6</property>
-        <property name="hexpand">True</property>
-        <property name="vexpand">False</property>
-        <property name="action_name">app.encrypt_window.do_encrypt</property>
+        <property name="can_focus">False</property>
+        <property name="margin_top">7</property>
+        <child>
+          <object class="GtkCheckButton" id="chk_armor">
+            <property name="label" translatable="yes">Armor</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">False</property>
+            <property name="tooltip_text" translatable="yes">Increases size of resulting file but it allows copy/pasting into text-only programs (like an email client)</property>
+            <property name="margin_left">8</property>
+            <property name="xalign">0</property>
+            <property name="draw_indicator">True</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSpinner" id="spn_encrypt">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="halign">end</property>
+            <property name="hexpand">True</property>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="btn_do_encrypt">
+            <property name="label" translatable="yes">Encrypt</property>
+            <property name="name">btn_do_encrypt</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="halign">end</property>
+            <property name="valign">center</property>
+            <property name="margin_top">6</property>
+            <property name="margin_bottom">6</property>
+            <property name="hexpand">False</property>
+            <property name="vexpand">False</property>
+            <property name="action_name">app.encrypt_window.do_encrypt</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="padding">10</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
       </object>
       <packing>
         <property name="expand">False</property>
         <property name="fill">True</property>
-        <property name="padding">10</property>
         <property name="position">2</property>
       </packing>
     </child>

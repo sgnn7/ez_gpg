@@ -1,7 +1,17 @@
 # ez_gpg
 Personal take on what a GPG UI should look like
 
-PS: There's not much here besides the Main and Encrypt windows UIs (for now)
+PS: There's not much in the app besides basic encryption and signature verification (for now).
+
+## Prerequisites
+
+python3-gnupg (`sudo apt-get install python3-gnupg`), Gtk 3.0.
+
+## Installation
+
+Clone and run ./ezgpg from the checkout directory.
+
+### Notes
 
 Preliminary workflow (really bad scaling):
 
