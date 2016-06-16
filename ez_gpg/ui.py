@@ -46,6 +46,7 @@ class GenericWindow(Gtk.Window):
             pass
 
         self.connect("delete-event", self._close_window)
+        self.connect("key-press-event", self._on_key_pressed)
 
         self._mapped_actions = {}
         for action, callback in self._get_actions():
@@ -54,6 +55,13 @@ class GenericWindow(Gtk.Window):
             app.add_action(simple_action)
 
             self._mapped_actions[action] = simple_action
+
+    def _on_key_pressed(self, widget, event):
+        # TODO: Maybe use accelerators?
+        if event.keyval == Gdk.KEY_Escape:
+            self._close_window()
+
+        return False
 
     def _close_window(self, *args, **kwargs):
         self.destroy()
