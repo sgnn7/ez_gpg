@@ -23,7 +23,7 @@ class EzGpgUtils(object):
 
             keys.append((key_id, key_name, key_friendly_name))
 
-        keys.sort(key=lambda key_tuple: key_tuple[2])
+        keys.sort(key=lambda key_tuple: key_tuple[1].lower())
 
         return keys
 
