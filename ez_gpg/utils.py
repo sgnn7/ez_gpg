@@ -14,15 +14,31 @@ class EzGpgUtils(object):
 
         for key in gpg.list_keys():
             key_id = key['keyid']
-            key_friendly_name = key['uids'][0]
 
-            key_name = "%s %s" % (key_id, key_friendly_name)
+            key_name = key['uids'][0]
+            if len(key_name) > 60:
+                key_name = key_name[:60] + '...'
+
+            key_friendly_name = "%s %s" % (key_id, key_name)
 
             keys.append((key_id, key_name, key_friendly_name))
 
         keys.sort(key=lambda key_tuple: key_tuple[2])
 
         return keys
+
+    @staticmethod
+    def add_gpg_keys_to_combo_box(combo_box):
+        gpg_keys_list = Gtk.ListStore(str, str)
+        for key_id, key_name, key_friendly_name in EzGpgUtils.get_gpg_keys():
+            gpg_keys_list.append([key_id, key_name])
+
+        cell = Gtk.CellRendererText()
+        combo_box.pack_start(cell, True)
+        combo_box.add_attribute(cell, 'text', 1)
+
+        combo_box.set_model(gpg_keys_list)
+        combo_box.set_entry_text_column(1)
 
     @staticmethod
     def encrypt_files(window, filenames, key_ids, use_armor = True, callback = None):
@@ -47,6 +63,36 @@ class EzGpgUtils(object):
             print("Status: %s" % status)
 
             print("Encrypted %s to %s" % (filename, dest_filename))
+
+        # Stop spinner when we return
+        if callback:
+            callback(window)
+
+        EzGpgUtils.show_dialog(window,
+                               "Completed!",
+                               message_type = Gtk.MessageType.INFO)
+
+    @staticmethod
+    def sign_file(window, filename, key_ids, use_armor = True, callback = None):
+        # TODO: Fix this
+        key_id = key_ids[0]
+
+        print(" - Armor:", use_armor)
+
+        signature_file = "%s.sig" % filename
+
+        print("Signing %s to %s with %s" % (filename, signature_file, key_id))
+
+        gpg = gnupg.GPG()
+        status = None
+        with open(filename, 'rb') as src_file:
+            status = gpg.sign_file(src_file,
+                                   keyid=key_id,
+                                   clearsign=True,
+                                   output=signature_file)
+        print("Status: %s" % status)
+
+        print("Signed %s to %s" % (filename, signature_file))
 
         # Stop spinner when we return
         if callback:

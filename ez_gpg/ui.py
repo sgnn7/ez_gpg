@@ -10,23 +10,6 @@ from gi.repository import Gdk, Gio, GLib, Gtk
 
 from .utils import EzGpgUtils
 
-class GpgKeyList(Gtk.ComboBox):
-    def __init__(self):
-        Gtk.ComboBox.__init__(self)
-
-        self.set_name('gpg_key_list')
-
-        gpg_keys_list = Gtk.ListStore(str, str)
-        for key_id, key_name, key_friendly_name in EzGpgUtils.get_gpg_keys():
-            gpg_keys_list.append([key_id, key_friendly_name])
-
-        cell = Gtk.CellRendererText()
-        self.pack_start(cell, True)
-        self.add_attribute(cell, 'text', 1)
-
-        self.set_model(gpg_keys_list)
-        self.set_entry_text_column(1)
-
 class GenericWindow(Gtk.Window):
     def __init__(self, app, window_name, title, ):
         window_title = "EZ GPG - %s" % title
@@ -112,7 +95,7 @@ class MainWindow(GenericWindow):
 
     def show_sign_ui(self, action = None, param = None):
         print("Clicked Sign button")
-        EzGpgUtils.show_unimplemented_message_box(self)
+        self._show_window(SignWindow)
 
     def show_verify_ui(self, action = None, param = None):
         print("Clicked Verify button")
@@ -197,6 +180,73 @@ class EncryptWindow(GenericWindow):
 
         EzGpgUtils.encrypt_files(self, filenames, selected_keys, use_armor,
                                  callback = finished_encryption_cb)
+
+        self.destroy()
+
+class SignWindow(GenericWindow):
+    def __init__(self, app):
+        super().__init__(app, 'sign_window', "Sign file")
+
+        builder = Gtk.Builder()
+        builder.add_from_file('data/sign_window.ui')
+
+        self._source_file = builder.get_object('fc_source_file')
+
+        self._key_list = builder.get_object('cmb_key_list')
+        EzGpgUtils.add_gpg_keys_to_combo_box(self._key_list)
+
+        self._password_field = builder.get_object('ent_password')
+
+        self._armor_output_check_box = builder.get_object('chk_armor')
+        self._sign_spinner = builder.get_object('spn_sign')
+        self._sign_button = builder.get_object('btn_do_sign')
+
+        # XXX: Armor param doesn't seem to produce armored output so we
+        #      disable this for now
+        self._armor_output_check_box.set_visible(False)
+
+
+        self.add(builder.get_object('sign_window_vbox'))
+
+    def _get_actions(self):
+        return [ ('sign_window.do_sign', self.do_sign),
+               ]
+
+    def do_sign(self, action = None, param = None):
+        print("Clicked Sign button")
+
+        # TODO: Make this event driven vs post verification
+        print(" - Checking source file(s)")
+        source_file = self._source_file.get_filename()
+        if not source_file:
+            self._show_error_message("File not selected!")
+            return
+
+        print(" - Checking GPG key selection")
+        selected_key = self._key_list.get_active_id()
+        # TODO: Make this event driven vs post verification
+        if not selected_key:
+            self._show_error_message("No key selected!")
+            return
+
+        print(" - Key Id:", selected_key)
+
+        use_armor = self._armor_output_check_box.get_active()
+        print(" - Armor output: %s" % use_armor)
+
+        # Disable encrypt button if we're in the middle of encryption
+        print(" - Locking UI and showing spinner.")
+        self._sign_button.set_sensitive(False)
+        self._sign_spinner.start()
+
+        # XXX / TODO: We're having our main thread blocked by gnupg work
+        #             so we need to add threading at some point.
+        def finished_encryption_cb(self):
+            print(" - Finished. Stopping spinner.")
+            self._sign_spinner.stop()
+
+        EzGpgUtils.sign_file(self, source_file, selected_key,
+                             callback = finished_encryption_cb)
 
         self.destroy()
 
