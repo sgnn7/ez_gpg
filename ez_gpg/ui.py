@@ -246,6 +246,7 @@ class SignWindow(GenericWindow):
             self._sign_spinner.stop()
 
         EzGpgUtils.sign_file(self, source_file, selected_key,
+                             self._password_field.get_text(),
                              callback = finished_encryption_cb)
 
         self.destroy()

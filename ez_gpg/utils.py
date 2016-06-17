@@ -1,14 +1,21 @@
 import gi
 import gnupg  # Requires python3-gnupg
 
+from os.path import expanduser
+
 gi.require_version('Gtk', '3.0')
 
 from gi.repository import Gtk
 
 class EzGpgUtils(object):
     @staticmethod
+    def get_gpg_keyring():
+        # TODO: Get this working
+        return gnupg.GPG()
+
+    @staticmethod
     def get_gpg_keys():
-        gpg = gnupg.GPG()
+        gpg = EzGpgUtils.get_gpg_keyring()
 
         keys = []
 
@@ -49,7 +56,7 @@ class EzGpgUtils(object):
 
         print(" - Armor:", use_armor)
 
-        gpg = gnupg.GPG()
+        gpg = EzGpgUtils.get_gpg_keyring()
 
         for filename, dest_filename in conversion_list:
             print("Encrypting %s to %s" % (filename, dest_filename))
@@ -73,22 +80,20 @@ class EzGpgUtils(object):
                                message_type = Gtk.MessageType.INFO)
 
     @staticmethod
-    def sign_file(window, filename, key_ids, use_armor = True, callback = None):
-        # TODO: Fix this
-        key_id = key_ids[0]
-
+    def sign_file(window, filename, key_id, password, use_armor = True, callback = None):
         print(" - Armor:", use_armor)
+        # print(" - Password:", password)
 
         signature_file = "%s.sig" % filename
 
         print("Signing %s to %s with %s" % (filename, signature_file, key_id))
 
-        gpg = gnupg.GPG()
+        gpg = EzGpgUtils.get_gpg_keyring()
         status = None
         with open(filename, 'rb') as src_file:
             status = gpg.sign_file(src_file,
                                    keyid=key_id,
-                                   clearsign=True,
+                                   passphrase=password,
                                    output=signature_file)
         print("Status: %s" % status)
 
@@ -104,7 +109,7 @@ class EzGpgUtils(object):
 
     @staticmethod
     def verify_file(window, source_filename, signature_filename = None):
-        gpg = gnupg.GPG()
+        gpg = EzGpgUtils.get_gpg_keyring()
         print("Verifying file:", source_filename)
 
         verification = None
