@@ -14,12 +14,12 @@ class EzGpgUtils(object):
         return gnupg.GPG()
 
     @staticmethod
-    def get_gpg_keys():
+    def get_gpg_keys(secret = False):
         gpg = EzGpgUtils.get_gpg_keyring()
 
         keys = []
 
-        for key in gpg.list_keys():
+        for key in gpg.list_keys(secret):
             key_id = key['keyid']
 
             key_name = key['uids'][0]
@@ -35,9 +35,9 @@ class EzGpgUtils(object):
         return keys
 
     @staticmethod
-    def add_gpg_keys_to_combo_box(combo_box):
+    def add_gpg_keys_to_combo_box(combo_box, secret = False):
         gpg_keys_list = Gtk.ListStore(str, str)
-        for key_id, key_name, key_friendly_name in EzGpgUtils.get_gpg_keys():
+        for key_id, key_name, key_friendly_name in EzGpgUtils.get_gpg_keys(secret):
             gpg_keys_list.append([key_id, key_name])
 
         cell = Gtk.CellRendererText()

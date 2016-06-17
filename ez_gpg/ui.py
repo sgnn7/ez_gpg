@@ -193,7 +193,7 @@ class SignWindow(GenericWindow):
         self._source_file = builder.get_object('fc_source_file')
 
         self._key_list = builder.get_object('cmb_key_list')
-        EzGpgUtils.add_gpg_keys_to_combo_box(self._key_list)
+        EzGpgUtils.add_gpg_keys_to_combo_box(self._key_list, True)
 
         self._password_field = builder.get_object('ent_password')
 
