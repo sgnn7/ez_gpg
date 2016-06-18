@@ -46,6 +46,7 @@
         <property name="tooltip_text" translatable="yes">Select GPG key</property>
         <property name="entry_text_column">1</property>
         <property name="id_column">0</property>
+        <signal name="changed" handler="key_changed" swapped="no"/>
       </object>
       <packing>
         <property name="expand">False</property>
@@ -66,6 +67,7 @@
             <property name="invisible_char">●</property>
             <property name="placeholder_text" translatable="yes">Key Password</property>
             <property name="input_purpose">password</property>
+            <signal name="changed" handler="password_changed" swapped="no"/>
           </object>
           <packing>
             <property name="expand">True</property>

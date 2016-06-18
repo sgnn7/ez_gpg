@@ -94,6 +94,7 @@ class EzGpgUtils(object):
             status = gpg.sign_file(src_file,
                                    keyid=key_id,
                                    passphrase=password,
+                                   detach=True,
                                    output=signature_file)
         print("Status: %s" % status)
 
@@ -103,9 +104,23 @@ class EzGpgUtils(object):
         if callback:
             callback(window)
 
+        success = True
+        dialog_title = "Completed!"
+        message_text = "Signature can be found at:\n%s" % signature_file
+        message_type = Gtk.MessageType.INFO
+
+        if not status:
+            success = False
+            dialog_title = "FAILED!"
+            message_text = "Unable to sign %s!" % filename
+            message_type = Gtk.MessageType.ERROR
+
         EzGpgUtils.show_dialog(window,
-                               "Completed!",
-                               message_type = Gtk.MessageType.INFO)
+                               message_text,
+                               title = dialog_title,
+                               message_type = message_type)
+
+        return success
 
     @staticmethod
     def verify_file(window, source_filename, signature_filename = None):
@@ -154,6 +169,20 @@ class EzGpgUtils(object):
                                message_text,
                                title = dialog_title,
                                message_type = message_type)
+
+    @staticmethod
+    def check_key_password(key_id, password):
+        gpg = EzGpgUtils.get_gpg_keyring()
+        signed_data = gpg.sign("check string",
+                               keyid=key_id,
+                               passphrase=password)
+
+        if str(signed_data):
+            print("Password is valid!")
+            return True
+
+        # print("Password is NOT valid!")
+        return False
 
     def show_unimplemented_message_box(window):
         EzGpgUtils.show_dialog(window,

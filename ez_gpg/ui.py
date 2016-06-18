@@ -205,12 +205,25 @@ class SignWindow(GenericWindow):
         #      disable this for now
         self._armor_output_check_box.set_visible(False)
 
+        builder.connect_signals({ 'password_changed': self._check_key_password,
+                                  'key_changed': self._check_key_password })
 
         self.add(builder.get_object('sign_window_vbox'))
 
     def _get_actions(self):
         return [ ('sign_window.do_sign', self.do_sign),
                ]
+
+    def _check_key_password(self, widget):
+        window = widget.get_toplevel()
+        password_field = window._password_field
+        selected_key = self._key_list.get_active_id()
+        if selected_key:
+            if EzGpgUtils.check_key_password(selected_key, password_field.get_text()):
+                password_field.set_icon_from_stock(1, None)
+            else:
+                password_field.set_icon_from_stock(1, Gtk.STOCK_DIALOG_ERROR)
+                password_field.set_icon_tooltip_text(1, "Invalid password for the selected key!")
 
     def do_sign(self, action = None, param = None):
         print("Clicked Sign button")
@@ -244,12 +257,16 @@ class SignWindow(GenericWindow):
         def finished_encryption_cb(self):
             print(" - Finished. Stopping spinner.")
             self._sign_spinner.stop()
+            self._sign_button.set_sensitive(True)
 
-        EzGpgUtils.sign_file(self, source_file, selected_key,
-                             self._password_field.get_text(),
-                             callback = finished_encryption_cb)
+        success = EzGpgUtils.sign_file(self, source_file, selected_key,
+                                       self._password_field.get_text(),
+                                       callback = finished_encryption_cb)
 
-        self.destroy()
+        if success:
+            self.destroy()
+        else:
+            finished_encryption_cb(self)
 
 class VerifyWindow(GenericWindow):
     def __init__(self, app):
