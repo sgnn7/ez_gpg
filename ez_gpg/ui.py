@@ -301,9 +301,10 @@ class VerifyWindow(GenericWindow):
         # Disable verify button if we're in the middle of verification
         self._verify_button.set_sensitive(False)
 
-        EzGpgUtils.verify_file(self, source_file, signature_file)
-
-        self.destroy()
+        if EzGpgUtils.verify_file(self, source_file, signature_file):
+            self.destroy()
+        else:
+            self._verify_button.set_sensitive(True)
 
 class EzGpg(Gtk.Application):
     def __init__(self, *args, **kwargs):

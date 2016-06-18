@@ -140,16 +140,23 @@ class EzGpgUtils(object):
 
         print(" - Verification data:", verification)
         print(" - Fingerprint:", verification.fingerprint)
-        print(" - Username:", verification.username)
         print(" - Key ID:", verification.key_id)
 
         trust_level = None
-        if verification.trust_level:
+        username = None
+        if verification.valid:
             print("Trust level:", verification.trust_text)
+            trust_level = verification.trust_level
+
+            print("Username level:", verification.username)
+            username = verification.username
+
+        success_message = [ "File %s verified!" % source_filename,
+                            "User: %s" % username,
+                            "Trust = %s" % verification.trust_text ]
 
         dialog_title = "Verified!"
-        message_text = "File %s verified!\nTrust = %s" % (source_filename,
-                                                         verification.trust_text)
+        message_text = '\n'.join(success_message)
         message_type = Gtk.MessageType.INFO
 
         if not verification.valid:
@@ -162,13 +169,15 @@ class EzGpgUtils(object):
             message_type = Gtk.MessageType.ERROR
         elif verification.trust_level < verification.TRUST_MARGINAL:
             dialog_title = "NOT TRUSTED ENOGUH!"
-            message_text = "Signature for %s was verified but you don't trusit it enough!" % source_filename
+            message_text = "Signature for %s was verified but you don't trust it enough!" % source_filename
             message_type = Gtk.MessageType.ERROR
 
         EzGpgUtils.show_dialog(window,
                                message_text,
                                title = dialog_title,
                                message_type = message_type)
+
+        return verification.valid
 
     @staticmethod
     def check_key_password(key_id, password):
