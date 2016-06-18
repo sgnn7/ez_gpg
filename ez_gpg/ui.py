@@ -91,7 +91,7 @@ class MainWindow(GenericWindow):
 
     def show_decrypt_ui(self, action = None, param = None):
         print("Clicked Decrypt button")
-        EzGpgUtils.show_unimplemented_message_box(self)
+        self._show_window(DecryptWindow)
 
     def show_sign_ui(self, action = None, param = None):
         print("Clicked Sign button")
@@ -122,7 +122,7 @@ class EncryptWindow(GenericWindow):
         #      disable this for now
         self._armor_output_check_box.set_visible(False)
 
-        for key_id, key_name, key_friendly_name in EzGpgUtils.get_gpg_keys():
+        for key_id, key_name, key_friendly_name, subkeys in EzGpgUtils.get_gpg_keys():
             key_row = Gtk.CheckButton(key_friendly_name)
             key_row.set_name(key_id)
 
@@ -267,6 +267,146 @@ class SignWindow(GenericWindow):
             self.destroy()
         else:
             finished_encryption_cb(self)
+
+class DecryptWindow(GenericWindow):
+    def __init__(self, app):
+        super().__init__(app, 'decrypt_window', "Decrypt file")
+
+        builder = Gtk.Builder()
+        builder.add_from_file('data/decrypt_window.ui')
+
+        self._source_file = builder.get_object('fc_source_file')
+
+        self._key_list = builder.get_object('cmb_key_list')
+        EzGpgUtils.add_gpg_keys_to_combo_box(self._key_list, True)
+
+        # TODO: Use a real ID
+        self._key_list.get_model().append(['symetric',
+                                           'Symetric encryption (password only)'])
+
+        # Prefetch the list
+        self._gpg_keys = EzGpgUtils.get_gpg_keys(True)
+
+        # Install a filter
+        self._key_filter = self._key_list.get_model().filter_new()
+        self._key_filter.set_visible_func(self._filter_key_ids)
+        self._key_list.set_model(self._key_filter)
+
+        self._password_field = builder.get_object('ent_password')
+
+        self._armor_output_check_box = builder.get_object('chk_armor')
+        self._decrypt_spinner = builder.get_object('spn_decrypt')
+        self._decrypt_button = builder.get_object('btn_do_decrypt')
+
+        builder.connect_signals({ 'password_changed': self._check_key_password,
+                                  'key_changed': self._check_key_password,
+                                  'file_chosen': self._update_key_list })
+
+        self.add(builder.get_object('decrypt_window_vbox'))
+
+    def _get_actions(self):
+        return [ ('decrypt_window.do_decrypt', self.do_decrypt),
+               ]
+
+    # XXX: Nasty but no easy way to compare subkeys for all items with
+    #      inconsistent lengths between two arrays
+    def _filter_key_ids(self, model, iter, data):
+        if not self._source_file.get_filename():
+            return False
+
+        info = self._encrypted_file_info
+
+        if info.is_symetric:
+            return model[iter][0] == 'symetric'
+
+        matching_keys = list(filter(lambda x: x[0] == model[iter][0], self._gpg_keys))
+        if len(matching_keys) == 0:
+            return False
+
+        key_id, key_name, key_friendly_name, subkeys = matching_keys[0]
+        for subkey in subkeys:
+            # print("Comparing %s in %s" % (subkey, info.key_ids))
+            for encryption_key in info.key_ids:
+                if subkey.endswith(encryption_key):
+                    print("Found! Matching key:", key_id, key_name)
+                    info.matching_key = key_id
+                    return True
+
+        return False
+
+
+    def _update_key_list(self, widget):
+        print("File changed - checking for key_ids...")
+        self._encrypted_file_info = EzGpgUtils.get_encryped_file_info(self,
+                                                                      widget.get_filename())
+
+        info = self._encrypted_file_info
+        if info.is_symetric:
+            print("Symetric encryption")
+            self._key_filter.refilter()
+            self._key_list.set_active_id('symetric')
+        else:
+            print("Keys: ", info.key_ids)
+            self._key_filter.refilter()
+
+            if info.matching_key:
+                self._key_list.set_active_id(info.matching_key)
+            else:
+                EzGpgUtils.show_dialog(self,
+                                       "ERROR! You do not have a key that decrypt this file!",
+                                       title="Missing decryption key")
+
+        self._check_key_password(widget)
+
+    def _check_key_password(self, widget):
+        window = widget.get_toplevel()
+        password_field = window._password_field
+        selected_key = self._key_list.get_active_id()
+
+        if not selected_key or \
+           selected_key == 'symetric':
+            password_field.set_icon_from_stock(1, None)
+        else:
+            if EzGpgUtils.check_key_password(selected_key, password_field.get_text()):
+                password_field.set_icon_from_stock(1, None)
+            else:
+                password_field.set_icon_from_stock(1, Gtk.STOCK_DIALOG_ERROR)
+                password_field.set_icon_tooltip_text(1, "Invalid password for the selected key!")
+
+
+    def do_decrypt(self, action = None, param = None):
+        print("Clicked Decrypt button")
+
+        # TODO: Make this event driven vs post verification
+        print(" - Checking source file(s)")
+        source_file = self._source_file.get_filename()
+        if not source_file:
+            self._show_error_message("File not selected!")
+            return
+
+        selected_key = self._key_list.get_active_id()
+        print(" - Key Id:", selected_key)
+
+        # Disable encrypt button if we're in the middle of encryption
+        print(" - Locking UI and showing spinner.")
+        self._decrypt_button.set_sensitive(False)
+        self._decrypt_spinner.start()
+
+        # XXX / TODO: We're having our main thread blocked by gnupg work
+        #             so we need to add threading at some point.
+        def finished_decryption_cb(self):
+            print(" - Finished. Stopping spinner.")
+            self._decrypt_spinner.stop()
+            self._decrypt_button.set_sensitive(True)
+
+        success = EzGpgUtils.decrypt_file(self, source_file,
+                                          self._password_field.get_text(),
+                                          callback = finished_decryption_cb)
+
+        if success:
+            self.destroy()
+        else:
+            finished_decryption_cb(self)
 
 class VerifyWindow(GenericWindow):
     def __init__(self, app):

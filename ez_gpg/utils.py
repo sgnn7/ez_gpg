@@ -1,5 +1,7 @@
 import gi
 import gnupg  # Requires python3-gnupg
+import re
+import subprocess
 
 from os.path import expanduser
 
@@ -28,7 +30,11 @@ class EzGpgUtils(object):
 
             key_friendly_name = "%s %s" % (key_id, key_name)
 
-            keys.append((key_id, key_name, key_friendly_name))
+            subkeys = []
+            for subkey in key['subkeys']:
+                subkeys.append(subkey[0])
+
+            keys.append((key_id, key_name, key_friendly_name, subkeys))
 
         keys.sort(key=lambda key_tuple: key_tuple[1].lower())
 
@@ -36,8 +42,9 @@ class EzGpgUtils(object):
 
     @staticmethod
     def add_gpg_keys_to_combo_box(combo_box, secret = False):
+
         gpg_keys_list = Gtk.ListStore(str, str)
-        for key_id, key_name, key_friendly_name in EzGpgUtils.get_gpg_keys(secret):
+        for key_id, key_name, key_friendly_name, subkeys in EzGpgUtils.get_gpg_keys(secret):
             gpg_keys_list.append([key_id, key_name])
 
         cell = Gtk.CellRendererText()
@@ -121,6 +128,100 @@ class EzGpgUtils(object):
                                message_type = message_type)
 
         return success
+
+    @staticmethod
+    def decrypt_file(window, filename, password, callback = None):
+        # print(" - Password:", password)
+
+        decrypted_file = filename.rstrip('.gpg')
+
+        print("Decrypting %s to %s" % (filename, decrypted_file))
+
+        gpg = EzGpgUtils.get_gpg_keyring()
+        status = None
+        with open(filename, 'rb') as src_file:
+            status = gpg.decrypt_file(src_file,
+                                      passphrase=password,
+                                      output=decrypted_file)
+        print("Status: %s" % status)
+
+        print("Decrypted %s to %s" % (filename, decrypted_file))
+
+        # Stop spinner when we return
+        if callback:
+            callback(window)
+
+        success = True
+        dialog_title = "Completed!"
+        message_text = "Decrypted file can be found at:\n%s" % decrypted_file
+        message_type = Gtk.MessageType.INFO
+
+        if not status:
+            success = False
+            dialog_title = "FAILED!"
+            message_text = "Unable to decrypt %s!" % filename
+            message_type = Gtk.MessageType.ERROR
+
+        EzGpgUtils.show_dialog(window,
+                               message_text,
+                               title = dialog_title,
+                               message_type = message_type)
+
+        return success
+
+    # XXX: There's no good way though python3-gnupg to find out what
+    #      type of encryption is on a file
+    @staticmethod
+    def get_encryped_file_info(window, filename):
+        class Info(object):
+            def __init__(self):
+                self.is_symetric = False
+                self.key_ids = []
+                self.matching_key = None
+
+        info = Info()
+
+        command = [ 'gpg', '--keyring=/dev/null', '--no-default-keyring',
+                    '--list-only', '--verbose', filename ]
+
+        try:
+            gpg_file_info_results = subprocess.check_output(command,
+                                                            stderr=subprocess.STDOUT,
+                                                            universal_newlines = True)
+        except:
+            print("Invalid file!")
+            EzGpgUtils.show_dialog(window,
+                                   "ERROR! Not a GPG-encrypted file!",
+                                   title="Invalid file")
+
+        # print("Output:")
+        # print(gpg_file_info_results)
+
+        gpg_file_info_results = gpg_file_info_results.split('\n')
+
+        key_id_regx = re.compile(' ([0-9a-fA-f]{8,16})$')
+        symetric_regex = re.compile(' \d+ pass')
+
+        for gpg_line in gpg_file_info_results:
+            if not gpg_line.startswith('gpg:'):
+                continue
+
+            # print("Line:", gpg_line)
+
+            # Extract key ids (if any)
+            key_match = key_id_regx.search(gpg_line)
+            if key_match:
+                key_id = key_match.group(1)
+                # print("Key match:", key_id)
+                if key_id not in info.key_ids:
+                    info.key_ids.append(key_id)
+
+            sym_match = symetric_regex.search(gpg_line)
+            if sym_match:
+                # print("Symetric match")
+                info.is_symetric = True
+
+        return info
 
     @staticmethod
     def verify_file(window, source_filename, signature_filename = None):
