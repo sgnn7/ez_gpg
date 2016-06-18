@@ -3,3 +3,8 @@
 *.sw[po]
 
 *~
+
+# setupdist
+dist/
+build/
+*.egg-info/

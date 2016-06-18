@@ -522,3 +522,8 @@ class EzGpg(Gtk.Application):
         self._window.destroy()
 
         self.quit()
+
+    @staticmethod
+    def launch()
+        print("Launching app")
+        EzGpg().run()
