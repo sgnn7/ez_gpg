@@ -5,51 +5,13 @@ PS: There's not much in the app besides basic encryption and signature verificat
 
 ## Prerequisites
 
-python3-gnupg (`sudo apt-get install python3-gnupg`), Gtk 3.0.
+python3-gnupg (`sudo apt-get install python3-gnupg`, PyPI /`pip` gnupg package does not work since it's an API-incompatible fork), Gtk 3.0.
 
 ## Installation
 
-Clone and run ./ezgpg from the checkout directory.
+- Clone
+- Install prerequisites
 
-### Notes
+## Running
 
-Preliminary workflow (really bad scaling):
-
-Main Window:
-```
-----------------------------
-|     Encrypt | Decrypt    |
-|       -------------      |
-|       Sign  | Verify     |
-|                          |
-|         [Key Mgmt]       |
-----------------------------
-```
-
-Encryption:
-```
-----------------------------
-|   -------------------    |
-|   |   Files (DnD)   |    |
-|   -------------------    |
-|    Receptients:          |
-|   -------------------    |
-|   |[x] Key 1     ...|    |
-|   -------------------    |
-|                [Encrypt] |
-----------------------------
-```
-
-Decryption:
-```
-----------------------------
-|   -------------------    |
-|   |   Files (DnD)   |    |
-|   -------------------    |
-|    Output dir:           |
-|   -------------------    |
-|   |~/foo         ...|    |
-|   -------------------    |
-|                [Decrypt] |
-----------------------------
-```
+- Run `./ezgpg` from the checkout directory
