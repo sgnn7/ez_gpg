@@ -11,10 +11,12 @@ from gi.repository import Gdk, Gio, GLib, Gtk
 from .utils import EzGpgUtils
 
 class GenericWindow(Gtk.Window):
-    def __init__(self, app, window_name, title, ):
+    def __init__(self, app, window_name, title,
+                 glade_file = None):
         window_title = "EZ GPG - %s" % title
 
         self._app = app
+        self._current_dir = os.path.dirname(os.path.realpath(__file__))
 
         Gtk.Window.__init__(self, title = window_title, application = app)
 
@@ -39,6 +41,11 @@ class GenericWindow(Gtk.Window):
 
             self._mapped_actions[action] = simple_action
 
+        if not glade_file:
+            glade_file = window_name
+
+        self._build_ui(glade_file)
+
     def _on_key_pressed(self, widget, event):
         # TODO: Maybe use accelerators?
         if event.keyval == Gdk.KEY_Escape:
@@ -57,16 +64,20 @@ class GenericWindow(Gtk.Window):
         EzGpgUtils.show_dialog(self,
                                message)
 
+    def get_builder(self):
+        return self._builder
+
+    def _build_ui(self, glade_file):
+        self._builder = Gtk.Builder()
+        self._builder.add_from_file(os.path.join(self._current_dir,
+                                                 '..',
+                                                 'data/%s.ui' % glade_file))
+
 class MainWindow(GenericWindow):
     def __init__(self, app):
         super().__init__(app, 'main_window', "Home")
 
-        builder = Gtk.Builder()
-        builder.add_from_file('data/main_window.ui')
-
-        self.add(builder.get_object('main_window_vbox'))
-
-        self._shown_window = None
+        self.add(self.get_builder().get_object('main_window_vbox'))
 
     def _get_actions(self):
         return [ ('show_encrypt_ui', self.show_encrypt_ui),
@@ -109,8 +120,7 @@ class EncryptWindow(GenericWindow):
     def __init__(self, app):
         super().__init__(app, 'encrypt_window', "Encrypt")
 
-        builder = Gtk.Builder()
-        builder.add_from_file('data/encrypt_window.ui')
+        builder = self.get_builder()
 
         self._key_list_box = builder.get_object('lst_key_selection')
         self._file_chooser = builder.get_object('fc_main')
@@ -187,8 +197,7 @@ class SignWindow(GenericWindow):
     def __init__(self, app):
         super().__init__(app, 'sign_window', "Sign file")
 
-        builder = Gtk.Builder()
-        builder.add_from_file('data/sign_window.ui')
+        builder = self.get_builder()
 
         self._source_file = builder.get_object('fc_source_file')
 
@@ -272,8 +281,7 @@ class DecryptWindow(GenericWindow):
     def __init__(self, app):
         super().__init__(app, 'decrypt_window', "Decrypt file")
 
-        builder = Gtk.Builder()
-        builder.add_from_file('data/decrypt_window.ui')
+        builder = self.get_builder()
 
         self._source_file = builder.get_object('fc_source_file')
 
@@ -412,8 +420,7 @@ class VerifyWindow(GenericWindow):
     def __init__(self, app):
         super().__init__(app, 'verify_window', "Verify Signature")
 
-        builder = Gtk.Builder()
-        builder.add_from_file('data/verify_window.ui')
+        builder = self.get_builder()
 
         self._source_file = builder.get_object('fc_source_file')
         self._signature_file = builder.get_object('fc_signature_file')
@@ -524,6 +531,6 @@ class EzGpg(Gtk.Application):
         self.quit()
 
     @staticmethod
-    def launch()
+    def launch():
         print("Launching app")
         EzGpg().run()

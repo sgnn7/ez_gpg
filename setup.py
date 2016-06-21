@@ -19,7 +19,7 @@ setup(
         ]
     },
 
-    install_requires = ['gnupg'],
+    install_requires = ['python-gnupg'],
 
     package_data = {
         '': ['*.ui', '*.md', '*.css'],
