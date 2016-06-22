@@ -1,7 +1,13 @@
 # ez_gpg
 Personal take on what a GPG UI should look like
 
-PS: There's not much in the app besides basic encryption and signature verification (for now).
+Still missing:
+- Multi-file handling
+- DnD
+- Key management
+- PyPI packaging that works
+- Debian packaging
+- PPA
 
 ## Prerequisites
 
