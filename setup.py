@@ -12,10 +12,10 @@ setup(
 
     entry_points = {
         'gui_scripts': [
-            'ezgpg = ez_gpg.ui.EzGpg:launch',
+            'ezgpg = ez_gpg.ui:EzGpg.launch',
         ],
         'setuptools.installation': [
-            'eggsecutable = ez_gpg.ui.EzGpg:launch',
+            'eggsecutable = ez_gpg.ui:EzGpg.launch',
         ]
     },
 

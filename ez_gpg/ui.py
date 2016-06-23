@@ -2,6 +2,7 @@
 
 import gi
 import os
+import pkg_resources
 
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
@@ -16,7 +17,6 @@ class GenericWindow(Gtk.Window):
         window_title = "EZ GPG - %s" % title
 
         self._app = app
-        self._current_dir = os.path.dirname(os.path.realpath(__file__))
 
         Gtk.Window.__init__(self, title = window_title, application = app)
 
@@ -69,9 +69,10 @@ class GenericWindow(Gtk.Window):
 
     def _build_ui(self, glade_file):
         self._builder = Gtk.Builder()
-        self._builder.add_from_file(os.path.join(self._current_dir,
-                                                 '..',
-                                                 'data/%s.ui' % glade_file))
+
+        ui_filename = pkg_resources.resource_filename('ez_gpg',
+                                                      'data/%s.ui' % glade_file)
+        self._builder.add_from_file(ui_filename)
 
 class MainWindow(GenericWindow):
     def __init__(self, app):
@@ -490,9 +491,9 @@ class EzGpg(Gtk.Application):
         print("Activating...")
         if not self._window:
             current_dir = os.path.dirname(os.path.abspath(__file__))
-            css_file = Gio.File.new_for_uri('file:///%s/application.css' % current_dir)
             css_provider = Gtk.CssProvider()
-            css_provider.load_from_file(css_file)
+            css_provider.load_from_path(pkg_resources.resource_filename('ez_gpg',
+                                                                        'data/application.css'))
 
             screen = Gdk.Screen.get_default()
             style_context = Gtk.StyleContext()
