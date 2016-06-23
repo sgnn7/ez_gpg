@@ -11,13 +11,13 @@ Still missing:
 
 ## Prerequisites
 
-python3-gnupg (`sudo apt-get install python3-gnupg`, PyPI /`pip` gnupg package does not work since it's an API-incompatible fork), Gtk 3.0.
+python3-setuptools (`sudo apt-get install python3-setuptools`)
 
 ## Installation
 
-- Clone
-- Install prerequisites
+- Clone repo
+- `sudo setup.py install`
 
 ## Running
 
-- Run `./ezgpg` from the checkout directory
+- Run `ezgpg` from anywhere
