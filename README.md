@@ -5,7 +5,7 @@ Still missing:
 - Multi-file handling
 - DnD
 - Key management
-- PyPI packaging that works
+- <del>PyPI packaging that works</del>
 - Debian packaging
 - PPA
 
