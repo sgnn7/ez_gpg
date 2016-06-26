@@ -11,14 +11,15 @@ from gi.repository import Gdk, Gio, GLib, Gtk
 
 from .utils import EzGpgUtils
 
+
 class GenericWindow(Gtk.Window):
     def __init__(self, app, window_name, title,
-                 glade_file = None):
+                 glade_file=None):
         window_title = "EZ GPG - %s" % title
 
         self._app = app
 
-        Gtk.Window.__init__(self, title = window_title, application = app)
+        Gtk.Window.__init__(self, title=window_title, application=app)
 
         self.set_border_width(20)
         self.set_name(window_name)
@@ -74,6 +75,7 @@ class GenericWindow(Gtk.Window):
                                                       'data/%s.ui' % glade_file)
         self._builder.add_from_file(ui_filename)
 
+
 class MainWindow(GenericWindow):
     def __init__(self, app):
         super().__init__(app, 'main_window', "Home")
@@ -81,12 +83,12 @@ class MainWindow(GenericWindow):
         self.add(self.get_builder().get_object('main_window_vbox'))
 
     def _get_actions(self):
-        return [ ('show_encrypt_ui', self.show_encrypt_ui),
-                 ('show_decrypt_ui', self.show_decrypt_ui),
-                 ('show_sign_ui',    self.show_sign_ui),
-                 ('show_verify_ui',  self.show_verify_ui),
-                 ('key_management',  self.show_key_management_ui),
-               ]
+        return [('show_encrypt_ui', self.show_encrypt_ui),
+                ('show_decrypt_ui', self.show_decrypt_ui),
+                ('show_sign_ui',    self.show_sign_ui),
+                ('show_verify_ui',  self.show_verify_ui),
+                ('key_management',  self.show_key_management_ui),
+                ]
 
     def _show_window(self, clazz):
         child_window = clazz(self._app)
@@ -97,25 +99,26 @@ class MainWindow(GenericWindow):
 
         self._app.add_window(child_window)
 
-    def show_encrypt_ui(self, action = None, param = None):
+    def show_encrypt_ui(self, action=None, param=None):
         print("Clicked Encrypt button")
         self._show_window(EncryptWindow)
 
-    def show_decrypt_ui(self, action = None, param = None):
+    def show_decrypt_ui(self, action=None, param=None):
         print("Clicked Decrypt button")
         self._show_window(DecryptWindow)
 
-    def show_sign_ui(self, action = None, param = None):
+    def show_sign_ui(self, action=None, param=None):
         print("Clicked Sign button")
         self._show_window(SignWindow)
 
-    def show_verify_ui(self, action = None, param = None):
+    def show_verify_ui(self, action=None, param=None):
         print("Clicked Verify button")
         self._show_window(VerifyWindow)
 
-    def show_key_management_ui(self, action = None, param = None):
+    def show_key_management_ui(self, action=None, param=None):
         print("Clicked Key Management button")
         self._show_window(KeyManagementWindow)
+
 
 class KeyManagementWindow(GenericWindow):
     def __init__(self, app):
@@ -144,32 +147,33 @@ class KeyManagementWindow(GenericWindow):
         self.add(builder.get_object('main_vbox'))
 
     def _get_actions(self):
-        return [ ('create_key',  self.create_keys),
-                 ('edit_keys',   self.edit_keys),
-                 ('upload_keys', self.upload_keys),
-                 ('fetch_keys',  self.fetch_keys),
-                 ('delete_keys', self.delete_keys),
-               ]
+        return [('create_key',  self.create_keys),
+                ('edit_keys',   self.edit_keys),
+                ('upload_keys', self.upload_keys),
+                ('fetch_keys',  self.fetch_keys),
+                ('delete_keys', self.delete_keys),
+                ]
 
-    def create_keys(self, action = None, param = None):
+    def create_keys(self, action=None, param=None):
         print("Create Keys pressed...")
         EzGpgUtils.show_unimplemented_message_box(self)
 
-    def edit_keys(self, action = None, param = None):
+    def edit_keys(self, action=None, param=None):
         print("Edit Keys pressed...")
         EzGpgUtils.show_unimplemented_message_box(self)
 
-    def upload_keys(self, action = None, param = None):
+    def upload_keys(self, action=None, param=None):
         print("Upload Keys pressed...")
         EzGpgUtils.show_unimplemented_message_box(self)
 
-    def fetch_keys(self, action = None, param = None):
+    def fetch_keys(self, action=None, param=None):
         print("Fetch Keys pressed...")
         EzGpgUtils.show_unimplemented_message_box(self)
 
-    def delete_keys(self, action = None, param = None):
+    def delete_keys(self, action=None, param=None):
         print("Delete Keys pressed...")
         EzGpgUtils.show_unimplemented_message_box(self)
+
 
 class EncryptWindow(GenericWindow):
     def __init__(self, app):
@@ -198,10 +202,10 @@ class EncryptWindow(GenericWindow):
         self.add(builder.get_object('encrypt_window_vbox'))
 
     def _get_actions(self):
-        return [ ('encrypt_window.do_encrypt', self.do_encrypt),
-               ]
+        return [('encrypt_window.do_encrypt', self.do_encrypt),
+                ]
 
-    def do_encrypt(self, action = None, param = None):
+    def do_encrypt(self, action=None, param=None):
         print("Clicked Encrypt Content button")
 
         # TODO: Make this event driven vs post verification
@@ -244,9 +248,10 @@ class EncryptWindow(GenericWindow):
             self._encrypt_spinner.stop()
 
         EzGpgUtils.encrypt_files(self, filenames, selected_keys, use_armor,
-                                 callback = finished_encryption_cb)
+                                 callback=finished_encryption_cb)
 
         self.destroy()
+
 
 class SignWindow(GenericWindow):
     def __init__(self, app):
@@ -269,14 +274,14 @@ class SignWindow(GenericWindow):
         #      disable this for now
         self._armor_output_check_box.set_visible(False)
 
-        builder.connect_signals({ 'password_changed': self._check_key_password,
-                                  'key_changed': self._check_key_password })
+        builder.connect_signals({'password_changed': self._check_key_password,
+                                 'key_changed': self._check_key_password})
 
         self.add(builder.get_object('sign_window_vbox'))
 
     def _get_actions(self):
-        return [ ('sign_window.do_sign', self.do_sign),
-               ]
+        return [('sign_window.do_sign', self.do_sign),
+                ]
 
     def _check_key_password(self, widget):
         window = widget.get_toplevel()
@@ -289,7 +294,7 @@ class SignWindow(GenericWindow):
                 password_field.set_icon_from_stock(1, Gtk.STOCK_DIALOG_ERROR)
                 password_field.set_icon_tooltip_text(1, "Invalid password for the selected key!")
 
-    def do_sign(self, action = None, param = None):
+    def do_sign(self, action=None, param=None):
         print("Clicked Sign button")
 
         # TODO: Make this event driven vs post verification
@@ -325,12 +330,13 @@ class SignWindow(GenericWindow):
 
         success = EzGpgUtils.sign_file(self, source_file, selected_key,
                                        self._password_field.get_text(),
-                                       callback = finished_encryption_cb)
+                                       callback=finished_encryption_cb)
 
         if success:
             self.destroy()
         else:
             finished_encryption_cb(self)
+
 
 class DecryptWindow(GenericWindow):
     def __init__(self, app):
@@ -361,15 +367,15 @@ class DecryptWindow(GenericWindow):
         self._decrypt_spinner = builder.get_object('spn_decrypt')
         self._decrypt_button = builder.get_object('btn_do_decrypt')
 
-        builder.connect_signals({ 'password_changed': self._check_key_password,
-                                  'key_changed': self._check_key_password,
-                                  'file_chosen': self._update_key_list })
+        builder.connect_signals({'password_changed': self._check_key_password,
+                                 'key_changed': self._check_key_password,
+                                 'file_chosen': self._update_key_list})
 
         self.add(builder.get_object('decrypt_window_vbox'))
 
     def _get_actions(self):
-        return [ ('decrypt_window.do_decrypt', self.do_decrypt),
-               ]
+        return [('decrypt_window.do_decrypt', self.do_decrypt),
+                ]
 
     # XXX: Nasty but no easy way to compare subkeys for all items with
     #      inconsistent lengths between two arrays
@@ -396,7 +402,6 @@ class DecryptWindow(GenericWindow):
                     return True
 
         return False
-
 
     def _update_key_list(self, widget):
         print("File changed - checking for key_ids...")
@@ -436,8 +441,7 @@ class DecryptWindow(GenericWindow):
                 password_field.set_icon_from_stock(1, Gtk.STOCK_DIALOG_ERROR)
                 password_field.set_icon_tooltip_text(1, "Invalid password for the selected key!")
 
-
-    def do_decrypt(self, action = None, param = None):
+    def do_decrypt(self, action=None, param=None):
         print("Clicked Decrypt button")
 
         # TODO: Make this event driven vs post verification
@@ -464,12 +468,13 @@ class DecryptWindow(GenericWindow):
 
         success = EzGpgUtils.decrypt_file(self, source_file,
                                           self._password_field.get_text(),
-                                          callback = finished_decryption_cb)
+                                          callback=finished_decryption_cb)
 
         if success:
             self.destroy()
         else:
             finished_decryption_cb(self)
+
 
 class VerifyWindow(GenericWindow):
     def __init__(self, app):
@@ -484,10 +489,10 @@ class VerifyWindow(GenericWindow):
         self.add(builder.get_object('verify_window_vbox'))
 
     def _get_actions(self):
-        return [ ('verify_window.do_verify', self.do_verify),
-               ]
+        return [('verify_window.do_verify', self.do_verify),
+                ]
 
-    def do_verify(self, action = None, param = None):
+    def do_verify(self, action=None, param=None):
         print("Clicked Verify Signature button")
 
         # TODO: Make this event driven vs post verification
@@ -507,6 +512,7 @@ class VerifyWindow(GenericWindow):
             self.destroy()
         else:
             self._verify_button.set_sensitive(True)
+
 
 class EzGpg(Gtk.Application):
     def __init__(self, *args, **kwargs):
@@ -574,12 +580,12 @@ class EzGpg(Gtk.Application):
 
         return 0
 
-    def on_about(self, action = None, param = None):
+    def on_about(self, action=None, param=None):
         print("About button pressed")
         about_dialog = Gtk.AboutDialog(transient_for=self._window, modal=True)
         about_dialog.present()
 
-    def on_quit(self, action = None, param = None):
+    def on_quit(self, action=None, param=None):
         print("Quitting...")
         self._window.destroy()
 

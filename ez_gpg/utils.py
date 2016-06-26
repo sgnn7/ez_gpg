@@ -9,6 +9,7 @@ gi.require_version('Gtk', '3.0')
 
 from gi.repository import Gtk
 
+
 class EzGpgUtils(object):
     @staticmethod
     def get_gpg_keyring():
@@ -16,7 +17,7 @@ class EzGpgUtils(object):
         return gnupg.GPG()
 
     @staticmethod
-    def get_gpg_keys(secret = False):
+    def get_gpg_keys(secret=False):
         gpg = EzGpgUtils.get_gpg_keyring()
 
         keys = []
@@ -41,7 +42,7 @@ class EzGpgUtils(object):
         return keys
 
     @staticmethod
-    def add_gpg_keys_to_combo_box(combo_box, secret = False):
+    def add_gpg_keys_to_combo_box(combo_box, secret=False):
 
         gpg_keys_list = Gtk.ListStore(str, str)
         for key_id, key_name, key_friendly_name, subkeys in EzGpgUtils.get_gpg_keys(secret):
@@ -55,7 +56,7 @@ class EzGpgUtils(object):
         combo_box.set_entry_text_column(1)
 
     @staticmethod
-    def encrypt_files(window, filenames, key_ids, use_armor = True, callback = None):
+    def encrypt_files(window, filenames, key_ids, use_armor=True, callback=None):
         conversion_list = []
         for filename in filenames:
             dest_filename = "%s.gpg" % filename
@@ -84,10 +85,10 @@ class EzGpgUtils(object):
 
         EzGpgUtils.show_dialog(window,
                                "Completed!",
-                               message_type = Gtk.MessageType.INFO)
+                               message_type=Gtk.MessageType.INFO)
 
     @staticmethod
-    def sign_file(window, filename, key_id, password, use_armor = True, callback = None):
+    def sign_file(window, filename, key_id, password, use_armor=True, callback=None):
         print(" - Armor:", use_armor)
         # print(" - Password:", password)
 
@@ -124,13 +125,13 @@ class EzGpgUtils(object):
 
         EzGpgUtils.show_dialog(window,
                                message_text,
-                               title = dialog_title,
-                               message_type = message_type)
+                               title=dialog_title,
+                               message_type=message_type)
 
         return success
 
     @staticmethod
-    def decrypt_file(window, filename, password, callback = None):
+    def decrypt_file(window, filename, password, callback=None):
         # print(" - Password:", password)
 
         decrypted_file = filename.rstrip('.gpg')
@@ -164,8 +165,8 @@ class EzGpgUtils(object):
 
         EzGpgUtils.show_dialog(window,
                                message_text,
-                               title = dialog_title,
-                               message_type = message_type)
+                               title=dialog_title,
+                               message_type=message_type)
 
         return success
 
@@ -181,13 +182,13 @@ class EzGpgUtils(object):
 
         info = Info()
 
-        command = [ 'gpg', '--keyring=/dev/null', '--no-default-keyring',
-                    '--list-only', '--verbose', filename ]
+        command = ['gpg', '--keyring=/dev/null', '--no-default-keyring',
+                   '--list-only', '--verbose', filename]
 
         try:
             gpg_file_info_results = subprocess.check_output(command,
                                                             stderr=subprocess.STDOUT,
-                                                            universal_newlines = True)
+                                                            universal_newlines=True)
         except:
             print("Invalid file!")
             EzGpgUtils.show_dialog(window,
@@ -224,7 +225,7 @@ class EzGpgUtils(object):
         return info
 
     @staticmethod
-    def verify_file(window, source_filename, signature_filename = None):
+    def verify_file(window, source_filename, signature_filename=None):
         gpg = EzGpgUtils.get_gpg_keyring()
         print("Verifying file:", source_filename)
 
@@ -252,9 +253,9 @@ class EzGpgUtils(object):
             print("Username level:", verification.username)
             username = verification.username
 
-        success_message = [ "File %s verified!" % source_filename,
-                            "User: %s" % username,
-                            "Trust = %s" % verification.trust_text ]
+        success_message = ["File %s verified!" % source_filename,
+                           "User: %s" % username,
+                           "Trust = %s" % verification.trust_text]
 
         dialog_title = "Verified!"
         message_text = '\n'.join(success_message)
@@ -275,8 +276,8 @@ class EzGpgUtils(object):
 
         EzGpgUtils.show_dialog(window,
                                message_text,
-                               title = dialog_title,
-                               message_type = message_type)
+                               title=dialog_title,
+                               message_type=message_type)
 
         return verification.valid
 
@@ -300,7 +301,7 @@ class EzGpgUtils(object):
                                "Not Implemented")
 
     @staticmethod
-    def show_dialog(window, message, title = "EzGpG", message_type = Gtk.MessageType.WARNING):
+    def show_dialog(window, message, title="EzGpG", message_type=Gtk.MessageType.WARNING):
         dialog = Gtk.MessageDialog(window, 0,
                                    message_type,
                                    Gtk.ButtonsType.OK,
