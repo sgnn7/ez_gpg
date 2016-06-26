@@ -29,6 +29,20 @@ setup(
     author_email = "sgnn7@sgnn7.org",
     description = "Simplified GPG UI",
     license = "MIT",
-    keywords = "gpg gpg2 ui crypto cryptography pgp",
     url = "https://github.cpom/sgnn7/ez_gpg",
+    keywords = ["gpg", "gpg2", "pgp", "crypto", "cryptography"],
+    classifiers = [
+        "Programming Language :: Python :: 3 :: Only"
+        "Development Status :: 3 - Alpha",
+        "Environment :: X11 Applications :: GTK",
+        "Intended Audience :: End Users/Desktop",
+        "License :: OSI Approved :: GNU Lesser General Public License v2 (LGPLv2)",
+        "Operating System :: POSIX :: Linux",
+        "Natural Language :: English",
+        "Topic :: Communications :: Email",
+        "Topic :: Office/Business",
+        "Topic :: Security :: Cryptography",
+        "Topic :: Security",
+        "Topic :: Utilities",
+        ],
 )
