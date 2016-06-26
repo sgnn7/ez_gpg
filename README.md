@@ -12,18 +12,18 @@ Still missing:
 ## Prerequisites
 
 - `python3-setuptools` (`sudo apt-get install python3-setuptools`)
-- `python3-gnutls` if you want to run the app without installation (`sudo apt-get install python3-gnutls`)
+- `python3-gnutls` (`sudo apt-get install python3-gnutls`)
 
 ## Installation
 
 ### Using fpm binary packages (recommended)
 
 - Clone repo
-- Install Ruby (i.e. `sudo apt-get install ruby`)
+- Install Ruby (`sudo apt-get install ruby`)
  - `rvm` tool recommended as your Ruby manager if you don't want fpm in global gems`
-- Install fpm (i.e. `gem install fpm`)
+- Install fpm (`gem install fpm`)
 - Build package with `./package.sh deb` or `./package.sh rpm`
-- Install package (i.e. `sudo dpkg -i ezgpg_*.deb`)
+- Install package (`sudo dpkg -i ezgpg_*.deb`)
 
 ### Using setuputils
 
@@ -33,3 +33,6 @@ Still missing:
 ## Running
 
 - Run `ezgpg` from anywhere
+- If running from repo:
+ - `cd <repo path>`
+ - `./ezgpg`
