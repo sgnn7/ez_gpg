@@ -1,8 +1,27 @@
 # ez_gpg
 Personal take on what a GPG UI should look like
 
-Still missing:
+## Screenshots
+
+![Main Window](/screenshots/main_screen.png?raw=true "Main Window")
+
+![Encryption Window](/screenshots/encrypt.png?raw=true "Encryption Window")
+
+![Signing Window (bad pass)](/screenshots/sign_bad_pw.png?raw=true "Signing Window (bad pass)")
+
+![Decrpytion Window (symetric)](/screenshots/decrypt_symetric.png?raw=true "Decryption Window (symetric)")
+
+![Decrpytion  Window](/screenshots/decrypt.png?raw=true "Decrpytion  Window")
+
+![Verification Window](/screenshots/verify.png?raw=true "Verification Window")
+
+### In progress:
+![Key Manag3ement Window](/screenshots/key_management.png?raw=true "Key Management Window")
+
+## Still missing:
 - Multi-file handling
+- Symetric encryption
+- Encryption/signing options
 - DnD
 - Key management
 - <del>PyPI packaging that works</del>
