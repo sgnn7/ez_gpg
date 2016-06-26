@@ -26,6 +26,7 @@ fpm -s python \
     -n ezgpg \
     -m "Srdjan Grubor <sgnn7@sgnn7.org>" \
     --deb-no-default-config-files \
+    --python-package-name-prefix python3 \
     --python-pip pip3 \
     --python-easyinstall easy_install3 \
     --python-bin python3 \
