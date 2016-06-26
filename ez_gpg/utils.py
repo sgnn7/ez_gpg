@@ -28,7 +28,7 @@ class EzGpgUtils(object):
             if len(key_name) > 60:
                 key_name = key_name[:60] + '...'
 
-            key_friendly_name = "%s %s" % (key_id, key_name)
+            key_friendly_name = "%s |%s|" % (key_name, key_id[-8:])
 
             subkeys = []
             for subkey in key['subkeys']:

@@ -115,6 +115,60 @@ class MainWindow(GenericWindow):
 
     def show_key_management_ui(self, action = None, param = None):
         print("Clicked Key Management button")
+        self._show_window(KeyManagementWindow)
+
+class KeyManagementWindow(GenericWindow):
+    def __init__(self, app):
+        super().__init__(app, 'key_management', "Key Management")
+
+        builder = self.get_builder()
+
+        self._key_list_box = builder.get_object('lst_keys')
+#        self._file_chooser = builder.get_object('fc_main')
+#        self._armor_output_check_box = builder.get_object('chk_armor')
+#        self._encrypt_spinner = builder.get_object('spn_encrypt')
+#        self._encrypt_button = builder.get_object('btn_do_encrypt')
+
+        # XXX: Armor param doesn't seem to produce armored output so we
+        #      disable this for now
+#        self._armor_output_check_box.set_visible(False)
+
+        for key_id, key_name, key_friendly_name, subkeys in EzGpgUtils.get_gpg_keys():
+            key_row = Gtk.CheckButton(key_friendly_name)
+            key_row.set_name(key_id)
+
+            self._key_list_box.add(key_row)
+
+        self._key_list_box.show_all()
+
+        self.add(builder.get_object('main_vbox'))
+
+    def _get_actions(self):
+        return [ ('create_key',  self.create_keys),
+                 ('edit_keys',   self.edit_keys),
+                 ('upload_keys', self.upload_keys),
+                 ('fetch_keys',  self.fetch_keys),
+                 ('delete_keys', self.delete_keys),
+               ]
+
+    def create_keys(self, action = None, param = None):
+        print("Create Keys pressed...")
+        EzGpgUtils.show_unimplemented_message_box(self)
+
+    def edit_keys(self, action = None, param = None):
+        print("Edit Keys pressed...")
+        EzGpgUtils.show_unimplemented_message_box(self)
+
+    def upload_keys(self, action = None, param = None):
+        print("Upload Keys pressed...")
+        EzGpgUtils.show_unimplemented_message_box(self)
+
+    def fetch_keys(self, action = None, param = None):
+        print("Fetch Keys pressed...")
+        EzGpgUtils.show_unimplemented_message_box(self)
+
+    def delete_keys(self, action = None, param = None):
+        print("Delete Keys pressed...")
         EzGpgUtils.show_unimplemented_message_box(self)
 
 class EncryptWindow(GenericWindow):
