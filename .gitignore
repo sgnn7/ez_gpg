@@ -8,3 +8,9 @@
 dist/
 build/
 *.egg-info/
+
+# Packages
+*.rpm
+*.deb
+*.zip
+*.tar
