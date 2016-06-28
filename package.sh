@@ -23,6 +23,10 @@ echo "Building package..."
 fpm -s python \
     -t $package_type \
     -d python3 \
+    -d python3-gi \
+    -d gobject-introspection \
+    -d libgtk-3-0 \
+    -d gir1.2-gtk-3.0 \
     -n ezgpg \
     -m "Srdjan Grubor <sgnn7@sgnn7.org>" \
     --deb-no-default-config-files \
