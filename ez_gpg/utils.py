@@ -206,6 +206,8 @@ class EzGpgUtils(object):
             EzGpgUtils.show_dialog(window,
                                    "ERROR! Not a GPG-encrypted file!",
                                    title="Invalid file")
+            return None
+
 
         # print("Output:")
         # print(gpg_file_info_results)
