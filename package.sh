@@ -23,6 +23,7 @@ echo "Building package..."
 fpm -s python \
     -t $package_type \
     -d python3 \
+    -d gnupg \
     -d python3-gi \
     -d gobject-introspection \
     -d libgtk-3-0 \
