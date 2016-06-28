@@ -182,6 +182,18 @@ class EzGpgUtils(object):
 
         info = Info()
 
+        # Sanity check
+        try:
+            subprocess.check_output(['gpg', '--version'])
+        except:
+            print("ERRROR! GPG not found!")
+            EzGpgUtils.show_dialog(window,
+                                   "ERROR! GPG binary not found in path!",
+                                   title="GPG not found")
+
+            window.destroy()
+            return None
+
         command = ['gpg', '--keyring=/dev/null', '--no-default-keyring',
                    '--list-only', '--verbose', filename]
 

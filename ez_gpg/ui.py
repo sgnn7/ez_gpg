@@ -409,6 +409,9 @@ class DecryptWindow(GenericWindow):
                                                                       widget.get_filename())
 
         info = self._encrypted_file_info
+        if not info:
+            return
+
         if info.is_symetric:
             print("Symetric encryption")
             self._key_filter.refilter()
