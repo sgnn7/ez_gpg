@@ -32,7 +32,7 @@ setup(
     url = "https://github.cpom/sgnn7/ez_gpg",
     keywords = ["gpg", "gpg2", "pgp", "crypto", "cryptography"],
     classifiers = [
-        "Programming Language :: Python :: 3 :: Only"
+        "Programming Language :: Python :: 3 :: Only",
         "Development Status :: 3 - Alpha",
         "Environment :: X11 Applications :: GTK",
         "Intended Audience :: End Users/Desktop",
