@@ -47,7 +47,7 @@ Personal take on what a GPG UI should look like
 ### Using setuputils
 
 - Clone repo
-- `sudo setup.py install`
+- `sudo ./setup.py install`
 
 ## Running
 
