@@ -31,7 +31,7 @@ Personal take on what a GPG UI should look like
 ## Prerequisites
 
 - `python3-setuptools` (`sudo apt-get install python3-setuptools`)
-- `python3-gnutls` (`sudo apt-get install python3-gnutls`)
+- `python3-gnupg` (`sudo apt-get install python3-gnupg`)
 
 ## Installation
 
