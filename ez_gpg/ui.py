@@ -132,7 +132,12 @@ class KeyManagementWindow(GenericWindow):
             key_row = Gtk.CheckButton(key_friendly_name)
             key_row.set_name(key_id)
 
+            key_row.connect('notify::active', self._key_changed_active_state)
+
             self._key_list_box.add(key_row)
+
+        # XXX: Keeping state is bad but we can fix this later
+        self._selected_keys = []
 
         self._key_list_box.show_all()
 
@@ -145,6 +150,16 @@ class KeyManagementWindow(GenericWindow):
                 ('key_management_window.do_fetch_keys',  self.fetch_keys),
                 ('key_management_window.do_delete_keys', self.delete_keys),
                 ]
+
+    def _key_changed_active_state(self, widget, params):
+        key_id = widget.get_name()
+        self._selected_keys = [key for key in self._selected_keys if key != key_id]
+        if widget.get_active():
+            self._selected_keys.append(key_id)
+
+        print("New selection list:")
+        for key in self._selected_keys:
+            print("Key:", key[-8:])
 
     def create_keys(self, action=None, param=None):
         print("Create Keys pressed...")
