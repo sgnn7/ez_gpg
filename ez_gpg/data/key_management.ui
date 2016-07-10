@@ -33,6 +33,7 @@
           <object class="GtkButton" id="btn_edit">
             <property name="label">gtk-edit</property>
             <property name="visible">True</property>
+            <property name="sensitive">False</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
             <property name="hexpand">True</property>
@@ -50,6 +51,7 @@
           <object class="GtkButton" id="btn_upload">
             <property name="label" translatable="yes">Upload</property>
             <property name="visible">True</property>
+            <property name="sensitive">False</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
             <property name="hexpand">True</property>
@@ -82,6 +84,7 @@
           <object class="GtkButton" id="btn_delete">
             <property name="label">gtk-delete</property>
             <property name="visible">True</property>
+            <property name="sensitive">False</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
             <property name="hexpand">True</property>

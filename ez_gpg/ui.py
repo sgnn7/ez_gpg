@@ -136,12 +136,18 @@ class KeyManagementWindow(GenericWindow):
 
             self._key_list_box.add(key_row)
 
+        self._edit_key_button = builder.get_object('btn_edit')
+        self._upload_key_button = builder.get_object('btn_upload')
+        self._delete_key_button = builder.get_object('btn_delete')
+
         # XXX: Keeping state is bad but we can fix this later
         self._selected_keys = []
 
         self._key_list_box.show_all()
 
         self.add(builder.get_object('main_vbox'))
+
+        self._update_button_state()
 
     def _get_actions(self):
         return [('key_management_window.do_create_key',  self.create_keys),
@@ -160,6 +166,13 @@ class KeyManagementWindow(GenericWindow):
         print("New selection list:")
         for key in self._selected_keys:
             print("Key:", key[-8:])
+
+        self._update_button_state()
+
+    def _update_button_state(self):
+        self._edit_key_button.set_sensitive(len(self._selected_keys) > 0)
+        self._upload_key_button.set_sensitive(len(self._selected_keys) > 0)
+        self._delete_key_button.set_sensitive(len(self._selected_keys) > 0)
 
     def create_keys(self, action=None, param=None):
         print("Create Keys pressed...")
