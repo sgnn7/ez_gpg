@@ -42,6 +42,16 @@ class EzGpgUtils(object):
         return keys
 
     @staticmethod
+    def delete_key(key_id):
+        print("Deleting", key_id[-7:])
+        gpg = EzGpgUtils.get_gpg_keyring()
+
+        delete_result = gpg.delete_keys(key_id, True)
+
+        print(delete_result)
+        return  delete_result == 'ok'
+
+    @staticmethod
     def add_gpg_keys_to_combo_box(combo_box, secret=False):
 
         gpg_keys_list = Gtk.ListStore(str, str)

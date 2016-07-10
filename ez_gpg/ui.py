@@ -192,8 +192,17 @@ class KeyManagementWindow(GenericWindow):
 
     def delete_keys(self, action=None, param=None):
         print("Delete Keys pressed...")
-        EzGpgUtils.show_unimplemented_message_box(self)
+        # TODO: Show which keys we're deleting
+        for key in self._selected_keys:
+            print("Trying to delete", key[-7:])
+            delete_result = EzGpgUtils.delete_key(key)
+            print("Delete key:", delete_result)
 
+            if delete_result:
+                # TODO: Need to delete the widget that has this key
+                pass
+
+        print("Done deleting keys")
 
 class EncryptWindow(GenericWindow):
     def __init__(self, app):
