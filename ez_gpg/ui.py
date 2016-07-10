@@ -36,6 +36,7 @@ class GenericWindow(Gtk.Window):
 
         self._mapped_actions = {}
         for action, callback in self._get_actions():
+            # print("Mapping %s to %s" % (action, callback))
             simple_action = Gio.SimpleAction.new(action, None)
             simple_action.connect('activate', callback)
             app.add_action(simple_action)
@@ -127,15 +128,6 @@ class KeyManagementWindow(GenericWindow):
         builder = self.get_builder()
 
         self._key_list_box = builder.get_object('lst_keys')
-#        self._file_chooser = builder.get_object('fc_main')
-#        self._armor_output_check_box = builder.get_object('chk_armor')
-#        self._encrypt_spinner = builder.get_object('spn_encrypt')
-#        self._encrypt_button = builder.get_object('btn_do_encrypt')
-
-        # XXX: Armor param doesn't seem to produce armored output so we
-        #      disable this for now
-#        self._armor_output_check_box.set_visible(False)
-
         for key_id, key_name, key_friendly_name, subkeys in EzGpgUtils.get_gpg_keys():
             key_row = Gtk.CheckButton(key_friendly_name)
             key_row.set_name(key_id)
@@ -147,11 +139,11 @@ class KeyManagementWindow(GenericWindow):
         self.add(builder.get_object('main_vbox'))
 
     def _get_actions(self):
-        return [('create_key',  self.create_keys),
-                ('edit_keys',   self.edit_keys),
-                ('upload_keys', self.upload_keys),
-                ('fetch_keys',  self.fetch_keys),
-                ('delete_keys', self.delete_keys),
+        return [('key_management_window.do_create_key',  self.create_keys),
+                ('key_management_window.do_edit_keys',   self.edit_keys),
+                ('key_management_window.do_upload_keys', self.upload_keys),
+                ('key_management_window.do_fetch_keys',  self.fetch_keys),
+                ('key_management_window.do_delete_keys', self.delete_keys),
                 ]
 
     def create_keys(self, action=None, param=None):
