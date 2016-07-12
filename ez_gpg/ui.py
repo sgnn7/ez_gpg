@@ -9,8 +9,8 @@ gi.require_version('Gdk', '3.0')
 
 from gi.repository import Gdk, Gio, GLib, GObject, Gtk
 
-from .utils import EzGpgUtils
-
+from .gpg_utils import GpgUtils
+from .ui_utils import error_wrapper, UiUtils
 
 class GenericWindow(Gtk.Window):
     def __init__(self, app, window_name, title,
@@ -38,7 +38,7 @@ class GenericWindow(Gtk.Window):
         for action, callback in self._get_actions():
             # print("Mapping %s to %s" % (action, callback))
             simple_action = Gio.SimpleAction.new(action, None)
-            simple_action.connect('activate', callback)
+            simple_action.connect('activate', error_wrapper(callback))
             app.add_action(simple_action)
 
             self._mapped_actions[action] = simple_action
@@ -63,8 +63,8 @@ class GenericWindow(Gtk.Window):
 
     def _show_error_message(self, message):
         print("ERROR! %s" % message)
-        EzGpgUtils.show_dialog(self,
-                               message)
+        UiUtils.show_dialog(self,
+                            message)
 
     def get_builder(self):
         return self._builder
@@ -129,7 +129,7 @@ class KeyManagementWindow(GenericWindow):
 
         bold = False
         self._key_list_box = builder.get_object('lst_keys')
-        for key_id, key_name, key_friendly_name, subkeys in EzGpgUtils.get_gpg_keys():
+        for key_id, key_name, key_friendly_name, subkeys in GpgUtils.get_gpg_keys():
             key_row = Gtk.CheckButton(GObject.markup_escape_text(key_friendly_name))
             key_row.get_children()[0].set_use_markup(True)
             key_row.set_name(key_id)
@@ -181,30 +181,30 @@ class KeyManagementWindow(GenericWindow):
 
     def create_keys(self, action=None, param=None):
         print("Create Keys pressed...")
-        EzGpgUtils.show_unimplemented_message_box(self)
+        UiUtils.show_unimplemented_message_box(self)
 
     def edit_keys(self, action=None, param=None):
         print("Edit Keys pressed...")
-        EzGpgUtils.show_unimplemented_message_box(self)
+        UiUtils.show_unimplemented_message_box(self)
 
     def export_keys(self, action=None, param=None):
         print("Export Keys pressed...")
-        EzGpgUtils.show_unimplemented_message_box(self)
+        UiUtils.show_unimplemented_message_box(self)
 
     def upload_keys(self, action=None, param=None):
         print("Upload Keys pressed...")
-        EzGpgUtils.show_unimplemented_message_box(self)
+        UiUtils.show_unimplemented_message_box(self)
 
     def fetch_keys(self, action=None, param=None):
         print("Fetch Keys pressed...")
-        EzGpgUtils.show_unimplemented_message_box(self)
+        UiUtils.show_unimplemented_message_box(self)
 
     def delete_keys(self, action=None, param=None):
         print("Delete Keys pressed...")
         # TODO: Show which keys we're deleting
         for key in self._selected_keys:
             print("Trying to delete", key[-7:])
-            delete_result = EzGpgUtils.delete_key(key)
+            delete_result = GpgUtils.delete_key(key)
             print("Delete key:", delete_result)
 
             if delete_result:
@@ -229,7 +229,7 @@ class EncryptWindow(GenericWindow):
         #      disable this for now
         self._armor_output_check_box.set_visible(False)
 
-        for key_id, key_name, key_friendly_name, subkeys in EzGpgUtils.get_gpg_keys():
+        for key_id, key_name, key_friendly_name, subkeys in GpgUtils.get_gpg_keys():
             key_row = Gtk.CheckButton(key_friendly_name)
             key_row.set_name(key_id)
 
@@ -285,7 +285,7 @@ class EncryptWindow(GenericWindow):
             print(" - Finished. Stopping spinner.")
             self._encrypt_spinner.stop()
 
-        EzGpgUtils.encrypt_files(self, filenames, selected_keys, use_armor,
+        GpgUtils.encrypt_files(self, filenames, selected_keys, use_armor,
                                  callback=finished_encryption_cb)
 
         self.destroy()
@@ -300,7 +300,7 @@ class SignWindow(GenericWindow):
         self._source_file = builder.get_object('fc_source_file')
 
         self._key_list = builder.get_object('cmb_key_list')
-        EzGpgUtils.add_gpg_keys_to_combo_box(self._key_list, True)
+        GpgUtils.add_gpg_keys_to_combo_box(self._key_list, True)
 
         self._password_field = builder.get_object('ent_password')
 
@@ -326,7 +326,7 @@ class SignWindow(GenericWindow):
         password_field = window._password_field
         selected_key = self._key_list.get_active_id()
         if selected_key:
-            if EzGpgUtils.check_key_password(selected_key, password_field.get_text()):
+            if GpgUtils.check_key_password(selected_key, password_field.get_text()):
                 password_field.set_icon_from_stock(1, None)
             else:
                 password_field.set_icon_from_stock(1, Gtk.STOCK_DIALOG_ERROR)
@@ -366,7 +366,7 @@ class SignWindow(GenericWindow):
             self._sign_spinner.stop()
             self._sign_button.set_sensitive(True)
 
-        success = EzGpgUtils.sign_file(self, source_file, selected_key,
+        success = GpgUtils.sign_file(self, source_file, selected_key,
                                        self._password_field.get_text(),
                                        callback=finished_encryption_cb)
 
@@ -385,14 +385,14 @@ class DecryptWindow(GenericWindow):
         self._source_file = builder.get_object('fc_source_file')
 
         self._key_list = builder.get_object('cmb_key_list')
-        EzGpgUtils.add_gpg_keys_to_combo_box(self._key_list, True)
+        GpgUtils.add_gpg_keys_to_combo_box(self._key_list, True)
 
         # TODO: Use a real ID
         self._key_list.get_model().append(['symetric',
                                            'Symetric encryption (password only)'])
 
         # Prefetch the list
-        self._gpg_keys = EzGpgUtils.get_gpg_keys(True)
+        self._gpg_keys = GpgUtils.get_gpg_keys(True)
 
         # Install a filter
         self._key_filter = self._key_list.get_model().filter_new()
@@ -443,7 +443,7 @@ class DecryptWindow(GenericWindow):
 
     def _update_key_list(self, widget):
         print("File changed - checking for key_ids...")
-        self._encrypted_file_info = EzGpgUtils.get_encryped_file_info(self,
+        self._encrypted_file_info = GpgUtils.get_encryped_file_info(self,
                                                                       widget.get_filename())
 
         info = self._encrypted_file_info
@@ -461,9 +461,9 @@ class DecryptWindow(GenericWindow):
             if info.matching_key:
                 self._key_list.set_active_id(info.matching_key)
             else:
-                EzGpgUtils.show_dialog(self,
-                                       "ERROR! You do not have a key that decrypt this file!",
-                                       title="Missing decryption key")
+                UiUtils.show_dialog(self,
+                                    "ERROR! You do not have a key that decrypt this file!",
+                                    title="Missing decryption key")
 
         self._check_key_password(widget)
 
@@ -476,7 +476,7 @@ class DecryptWindow(GenericWindow):
            selected_key == 'symetric':
             password_field.set_icon_from_stock(1, None)
         else:
-            if EzGpgUtils.check_key_password(selected_key, password_field.get_text()):
+            if GpgUtils.check_key_password(selected_key, password_field.get_text()):
                 password_field.set_icon_from_stock(1, None)
             else:
                 password_field.set_icon_from_stock(1, Gtk.STOCK_DIALOG_ERROR)
@@ -507,7 +507,7 @@ class DecryptWindow(GenericWindow):
             self._decrypt_spinner.stop()
             self._decrypt_button.set_sensitive(True)
 
-        success = EzGpgUtils.decrypt_file(self, source_file,
+        success = GpgUtils.decrypt_file(self, source_file,
                                           self._password_field.get_text(),
                                           callback=finished_decryption_cb)
 
@@ -549,7 +549,7 @@ class VerifyWindow(GenericWindow):
         # Disable verify button if we're in the middle of verification
         self._verify_button.set_sensitive(False)
 
-        if EzGpgUtils.verify_file(self, source_file, signature_file):
+        if GpgUtils.verify_file(self, source_file, signature_file):
             self.destroy()
         else:
             self._verify_button.set_sensitive(True)

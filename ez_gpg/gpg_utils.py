@@ -1,3 +1,5 @@
+# vim:ff=unix ts=4 sw=4 expandtab
+
 import gi
 import gnupg  # Requires python3-gnupg
 import re
@@ -6,11 +8,11 @@ import subprocess
 from os.path import expanduser
 
 gi.require_version('Gtk', '3.0')
-
 from gi.repository import Gtk
 
+from .ui_utils import UiUtils
 
-class EzGpgUtils(object):
+class GpgUtils(object):
     @staticmethod
     def get_gpg_keyring():
         # TODO: Get this working
@@ -18,7 +20,7 @@ class EzGpgUtils(object):
 
     @staticmethod
     def get_gpg_keys(secret=False):
-        gpg = EzGpgUtils.get_gpg_keyring()
+        gpg = GpgUtils.get_gpg_keyring()
 
         keys = []
 
@@ -42,20 +44,33 @@ class EzGpgUtils(object):
         return keys
 
     @staticmethod
+    def get_key_by_id(key_id):
+        keys = GpgUtils.get_gpg_keys()
+        for key_tuple in keys:
+            if key_id == key_tuple[0]:
+                return key_tuple
+
+        return None
+
+    @staticmethod
     def delete_key(key_id):
         print("Deleting", key_id[-7:])
-        gpg = EzGpgUtils.get_gpg_keyring()
+        gpg = GpgUtils.get_gpg_keyring()
+        keys = GpgUtils.get_gpg_keys()
 
-        delete_result = gpg.delete_keys(key_id, True)
+        key_id, key_name, _, subkeys = GpgUtils.get_key_by_id(key_id)
+        print(key_id, key_name)
 
+        delete_result = gpg.delete_keys(key_id, secret=True)
         print(delete_result)
-        return  delete_result == 'ok'
+
+        return  str(delete_result) == 'ok'
 
     @staticmethod
     def add_gpg_keys_to_combo_box(combo_box, secret=False):
 
         gpg_keys_list = Gtk.ListStore(str, str)
-        for key_id, key_name, key_friendly_name, subkeys in EzGpgUtils.get_gpg_keys(secret):
+        for key_id, key_name, key_friendly_name, subkeys in GpgUtils.get_gpg_keys(secret):
             gpg_keys_list.append([key_id, key_name])
 
         cell = Gtk.CellRendererText()
@@ -74,7 +89,7 @@ class EzGpgUtils(object):
 
         print(" - Armor:", use_armor)
 
-        gpg = EzGpgUtils.get_gpg_keyring()
+        gpg = GpgUtils.get_gpg_keyring()
 
         for filename, dest_filename in conversion_list:
             print("Encrypting %s to %s" % (filename, dest_filename))
@@ -93,9 +108,9 @@ class EzGpgUtils(object):
         if callback:
             callback(window)
 
-        EzGpgUtils.show_dialog(window,
-                               "Completed!",
-                               message_type=Gtk.MessageType.INFO)
+        UiUtils.show_dialog(window,
+                            "Completed!",
+                            message_type=Gtk.MessageType.INFO)
 
     @staticmethod
     def sign_file(window, filename, key_id, password, use_armor=True, callback=None):
@@ -106,7 +121,7 @@ class EzGpgUtils(object):
 
         print("Signing %s to %s with %s" % (filename, signature_file, key_id))
 
-        gpg = EzGpgUtils.get_gpg_keyring()
+        gpg = GpgUtils.get_gpg_keyring()
         status = None
         with open(filename, 'rb') as src_file:
             status = gpg.sign_file(src_file,
@@ -133,10 +148,10 @@ class EzGpgUtils(object):
             message_text = "Unable to sign %s!" % filename
             message_type = Gtk.MessageType.ERROR
 
-        EzGpgUtils.show_dialog(window,
-                               message_text,
-                               title=dialog_title,
-                               message_type=message_type)
+        UiUtils.show_dialog(window,
+                            message_text,
+                            title=dialog_title,
+                            message_type=message_type)
 
         return success
 
@@ -148,7 +163,7 @@ class EzGpgUtils(object):
 
         print("Decrypting %s to %s" % (filename, decrypted_file))
 
-        gpg = EzGpgUtils.get_gpg_keyring()
+        gpg = GpgUtils.get_gpg_keyring()
         status = None
         with open(filename, 'rb') as src_file:
             status = gpg.decrypt_file(src_file,
@@ -173,10 +188,10 @@ class EzGpgUtils(object):
             message_text = "Unable to decrypt %s!" % filename
             message_type = Gtk.MessageType.ERROR
 
-        EzGpgUtils.show_dialog(window,
-                               message_text,
-                               title=dialog_title,
-                               message_type=message_type)
+        UiUtils.show_dialog(window,
+                            message_text,
+                            title=dialog_title,
+                            message_type=message_type)
 
         return success
 
@@ -197,9 +212,9 @@ class EzGpgUtils(object):
             subprocess.check_output(['gpg', '--version'])
         except:
             print("ERRROR! GPG not found!")
-            EzGpgUtils.show_dialog(window,
-                                   "ERROR! GPG binary not found in path!",
-                                   title="GPG not found")
+            UiUtils.show_dialog(window,
+                                "ERROR! GPG binary not found in path!",
+                                title="GPG not found")
 
             window.destroy()
             return None
@@ -213,9 +228,9 @@ class EzGpgUtils(object):
                                                             universal_newlines=True)
         except:
             print("Invalid file!")
-            EzGpgUtils.show_dialog(window,
-                                   "ERROR! Not a GPG-encrypted file!",
-                                   title="Invalid file")
+            UiUtils.show_dialog(window,
+                                "ERROR! Not a GPG-encrypted file!",
+                                title="Invalid file")
             return None
 
 
@@ -250,7 +265,7 @@ class EzGpgUtils(object):
 
     @staticmethod
     def verify_file(window, source_filename, signature_filename=None):
-        gpg = EzGpgUtils.get_gpg_keyring()
+        gpg = GpgUtils.get_gpg_keyring()
         print("Verifying file:", source_filename)
 
         verification = None
@@ -298,16 +313,16 @@ class EzGpgUtils(object):
             message_text = "Signature for %s was verified but you don't trust it enough!" % source_filename
             message_type = Gtk.MessageType.ERROR
 
-        EzGpgUtils.show_dialog(window,
-                               message_text,
-                               title=dialog_title,
-                               message_type=message_type)
+        UiUtils.show_dialog(window,
+                            message_text,
+                            title=dialog_title,
+                            message_type=message_type)
 
         return verification.valid
 
     @staticmethod
     def check_key_password(key_id, password):
-        gpg = EzGpgUtils.get_gpg_keyring()
+        gpg = GpgUtils.get_gpg_keyring()
         signed_data = gpg.sign("check string",
                                keyid=key_id,
                                passphrase=password)
@@ -318,20 +333,3 @@ class EzGpgUtils(object):
 
         # print("Password is NOT valid!")
         return False
-
-    def show_unimplemented_message_box(window):
-        EzGpgUtils.show_dialog(window,
-                               "This functionality is not yet implemented!",
-                               "Not Implemented")
-
-    @staticmethod
-    def show_dialog(window, message, title="EzGpG", message_type=Gtk.MessageType.WARNING):
-        dialog = Gtk.MessageDialog(window, 0,
-                                   message_type,
-                                   Gtk.ButtonsType.OK,
-                                   title)
-        dialog.format_secondary_text(message)
-
-        response = dialog.run()
-
-        dialog.destroy()
