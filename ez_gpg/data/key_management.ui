@@ -48,6 +48,22 @@
           </packing>
         </child>
         <child>
+          <object class="GtkButton" id="btn_fetch">
+            <property name="label">Fetch</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="hexpand">True</property>
+            <property name="action_name">app.key_management_window.do_fetch_keys</property>
+            <property name="always_show_image">True</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+        <child>
           <object class="GtkButton" id="btn_upload">
             <property name="label" translatable="yes">Upload</property>
             <property name="visible">True</property>
@@ -61,23 +77,23 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">2</property>
+            <property name="position">3</property>
           </packing>
         </child>
         <child>
-          <object class="GtkButton" id="btn_fetch">
-            <property name="label">Fetch</property>
+          <object class="GtkButton" id="btn_export">
+            <property name="label">Export</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
             <property name="hexpand">True</property>
-            <property name="action_name">app.key_management_window.do_fetch_keys</property>
+            <property name="action_name">app.key_management_window.do_export_keys</property>
             <property name="always_show_image">True</property>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">3</property>
+            <property name="position">4</property>
           </packing>
         </child>
         <child>
@@ -95,7 +111,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">4</property>
+            <property name="position">5</property>
           </packing>
         </child>
       </object>

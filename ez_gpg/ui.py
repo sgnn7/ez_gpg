@@ -138,6 +138,7 @@ class KeyManagementWindow(GenericWindow):
 
         self._edit_key_button = builder.get_object('btn_edit')
         self._upload_key_button = builder.get_object('btn_upload')
+        self._export_key_button = builder.get_object('btn_export')
         self._delete_key_button = builder.get_object('btn_delete')
 
         # XXX: Keeping state is bad but we can fix this later
@@ -152,8 +153,9 @@ class KeyManagementWindow(GenericWindow):
     def _get_actions(self):
         return [('key_management_window.do_create_key',  self.create_keys),
                 ('key_management_window.do_edit_keys',   self.edit_keys),
-                ('key_management_window.do_upload_keys', self.upload_keys),
                 ('key_management_window.do_fetch_keys',  self.fetch_keys),
+                ('key_management_window.do_upload_keys', self.upload_keys),
+                ('key_management_window.do_export_keys', self.export_keys),
                 ('key_management_window.do_delete_keys', self.delete_keys),
                 ]
 
@@ -170,7 +172,8 @@ class KeyManagementWindow(GenericWindow):
         self._update_button_state()
 
     def _update_button_state(self):
-        self._edit_key_button.set_sensitive(len(self._selected_keys) > 0)
+        self._edit_key_button.set_sensitive(len(self._selected_keys) == 1)
+        self._export_key_button.set_sensitive(len(self._selected_keys) == 1)
         self._upload_key_button.set_sensitive(len(self._selected_keys) > 0)
         self._delete_key_button.set_sensitive(len(self._selected_keys) > 0)
 
@@ -180,6 +183,10 @@ class KeyManagementWindow(GenericWindow):
 
     def edit_keys(self, action=None, param=None):
         print("Edit Keys pressed...")
+        EzGpgUtils.show_unimplemented_message_box(self)
+
+    def export_keys(self, action=None, param=None):
+        print("Export Keys pressed...")
         EzGpgUtils.show_unimplemented_message_box(self)
 
     def upload_keys(self, action=None, param=None):
