@@ -7,7 +7,7 @@ import pkg_resources
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
 
-from gi.repository import Gdk, Gio, GLib, Gtk
+from gi.repository import Gdk, Gio, GLib, GObject, Gtk
 
 from .utils import EzGpgUtils
 
@@ -127,9 +127,11 @@ class KeyManagementWindow(GenericWindow):
 
         builder = self.get_builder()
 
+        bold = False
         self._key_list_box = builder.get_object('lst_keys')
         for key_id, key_name, key_friendly_name, subkeys in EzGpgUtils.get_gpg_keys():
-            key_row = Gtk.CheckButton(key_friendly_name)
+            key_row = Gtk.CheckButton(GObject.markup_escape_text(key_friendly_name))
+            key_row.get_children()[0].set_use_markup(True)
             key_row.set_name(key_id)
 
             key_row.connect('notify::active', self._key_changed_active_state)
