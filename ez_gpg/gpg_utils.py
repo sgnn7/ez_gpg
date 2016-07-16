@@ -60,48 +60,26 @@ class GpgUtils(object):
 
         return None
 
-    # python-gnupg doesn't work here - key is still in keyring
-#    @staticmethod
-#    def delete_key(key_id):
-#        print("Deleting", key_id[-7:])
-#        gpg = GpgUtils.get_gpg_keyring()
-#        keys = GpgUtils.get_gpg_keys()
-#
-#        key_id, key_name, _, subkeys = GpgUtils.get_key_by_id(key_id)
-#        print(key_id, key_name)
-#
-#        delete_result = gpg.delete_keys(key_id, secret=True)
-#        print(delete_result)
-#
-#        return  str(delete_result) == 'ok'
-
     @staticmethod
     def delete_key(key_id):
+        gpg = GpgUtils.get_gpg_keyring()
+
         public_key = GpgUtils.get_key_by_id(key_id)
         secret_key = GpgUtils.get_key_by_id(key_id, True)
 
-        delete_key_command = ['gpg',
-                              '--delete-key',
-                              '--batch',
-                              '--yes',
-                              key_id]
+        if secret_key:
+            # TODO: Confirm the deletion if we have a secret key
+            print("Secret key found. Deleting it")
+            result = gpg.delete_keys(secret_key[4], True)
+            if not str(result) == 'ok':
+                print("Failed to delete secret key (%s)" % result, secret_key)
+                return False
 
-        delete_secret_key_command = ['gpg',
-                                     '--delete-secret-key',
-                                     '--batch',
-                                     '--yes',
-                                     secret_key[4]] # Fingerprint = 5
+        print("Deleting public key")
+        result = gpg.delete_keys(public_key[4])
 
-        try:
-            if secret_key:
-                # TODO: Confirm the deletion if we have a secret key
-                print("Secret key found. Deleting it")
-                subprocess.check_output(delete_secret_key_command)
-
-            print("Deleting public key")
-            subprocess.check_output(delete_key_command)
-        except Exception as e:
-            print("ERROR!", e)
+        if not str(result) == 'ok':
+            print("Failed to delete public key (%s)" % result, public_key)
             return False
 
         return True
