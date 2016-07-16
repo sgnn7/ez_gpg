@@ -27,6 +27,41 @@ class UiUtils(object):
 
         dialog.destroy()
 
+    @staticmethod
+    def _set_keyfile_filter(dialog):
+        filter_keys = Gtk.FileFilter()
+        filter_keys.set_name("Armoured keys")
+        filter_keys.add_pattern("*.asc")
+        filter_keys.add_pattern("*.key")
+        dialog.add_filter(filter_keys)
+
+        filter_any = Gtk.FileFilter()
+        filter_any.set_name("Any files")
+        filter_any.add_pattern("*")
+        dialog.add_filter(filter_any)
+
+    @staticmethod
+    def get_filename(window, title="Open..."):
+        dialog = Gtk.FileChooserDialog(title,
+                                       window,
+                                       Gtk.FileChooserAction.OPEN,
+                                       (Gtk.STOCK_CANCEL,
+                                        Gtk.ResponseType.CANCEL,
+                                        Gtk.STOCK_OPEN,
+                                        Gtk.ResponseType.OK))
+
+        dialog.set_default_response(Gtk.ResponseType.OK)
+        UiUtils._set_keyfile_filter(dialog)
+
+        response = dialog.run()
+
+        filename = None
+        if response == Gtk.ResponseType.OK:
+            filename = dialog.get_filename()
+
+        dialog.destroy()
+        return filename
+
 class error_wrapper(object):
     """Error handler decorator"""
     def __init__(self, func):

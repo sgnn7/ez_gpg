@@ -44,27 +44,59 @@ class GpgUtils(object):
         return keys
 
     @staticmethod
-    def get_key_by_id(key_id):
-        keys = GpgUtils.get_gpg_keys()
+    def get_key_by_id(key_id, secret = False):
+        keys = GpgUtils.get_gpg_keys(secret)
+
         for key_tuple in keys:
             if key_id == key_tuple[0]:
                 return key_tuple
 
         return None
 
+    # python-gnupg doesn't work here - key is still in keyring
+#    @staticmethod
+#    def delete_key(key_id):
+#        print("Deleting", key_id[-7:])
+#        gpg = GpgUtils.get_gpg_keyring()
+#        keys = GpgUtils.get_gpg_keys()
+#
+#        key_id, key_name, _, subkeys = GpgUtils.get_key_by_id(key_id)
+#        print(key_id, key_name)
+#
+#        delete_result = gpg.delete_keys(key_id, secret=True)
+#        print(delete_result)
+#
+#        return  str(delete_result) == 'ok'
+
     @staticmethod
     def delete_key(key_id):
-        print("Deleting", key_id[-7:])
+        public_key = GpgUtils.get_key_by_id(key_id)
+        secret_key = GpgUtils.get_key_by_id(key_id, True)
+
+        delete_key_command = ['gpg', '--delete-key', '--batch', '--yes', key_id]
+        delete_secret_key_command = ['gpg', '--delete-secret-key', '--batch', '--yes', key_id]
+
+        try:
+            if secret_key:
+                print("Secret key found. Deleting it")
+                subprocess.check_output(delete_secret_key_command)
+
+            print("Deleting public key")
+            subprocess.check_output(delete_key_command)
+        except Exception as e:
+            print("ERROR!", e)
+            return False
+
+        return True
+
+    @staticmethod
+    def import_key(filename):
         gpg = GpgUtils.get_gpg_keyring()
-        keys = GpgUtils.get_gpg_keys()
+        key_data = None
+        with open (filename, "rb") as keyfile:
+            key_data=keyfile.read()
 
-        key_id, key_name, _, subkeys = GpgUtils.get_key_by_id(key_id)
-        print(key_id, key_name)
-
-        delete_result = gpg.delete_keys(key_id, secret=True)
-        print(delete_result)
-
-        return  str(delete_result) == 'ok'
+        return gpg.import_keys(key_data)
 
     @staticmethod
     def add_gpg_keys_to_combo_box(combo_box, secret=False):

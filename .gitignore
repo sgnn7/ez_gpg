@@ -8,9 +8,12 @@
 dist/
 build/
 *.egg-info/
+pip-*.json
 
 # Packages
 *.rpm
 *.deb
 *.zip
 *.tar
+
+local_test_data/

@@ -127,8 +127,27 @@ class KeyManagementWindow(GenericWindow):
 
         builder = self.get_builder()
 
-        bold = False
+        # XXX: Keeping state is bad but we can fix this later
+        self._selected_keys = []
+
         self._key_list_box = builder.get_object('lst_keys')
+        self._refresh_key_list()
+
+        self._edit_key_button = builder.get_object('btn_edit')
+        self._upload_key_button = builder.get_object('btn_upload')
+        self._export_key_button = builder.get_object('btn_export')
+        self._delete_key_button = builder.get_object('btn_delete')
+
+        self.add(builder.get_object('main_vbox'))
+
+        self._update_button_state()
+
+    def _refresh_key_list(self):
+        for child in self._key_list_box.get_children():
+            self._key_list_box.remove(child)
+            # child.destroy()
+            # TODO: Disconnect notify::active signal
+
         for key_id, key_name, key_friendly_name, subkeys in GpgUtils.get_gpg_keys():
             key_row = Gtk.CheckButton(GObject.markup_escape_text(key_friendly_name))
             key_row.get_children()[0].set_use_markup(True)
@@ -138,22 +157,11 @@ class KeyManagementWindow(GenericWindow):
 
             self._key_list_box.add(key_row)
 
-        self._edit_key_button = builder.get_object('btn_edit')
-        self._upload_key_button = builder.get_object('btn_upload')
-        self._export_key_button = builder.get_object('btn_export')
-        self._delete_key_button = builder.get_object('btn_delete')
-
-        # XXX: Keeping state is bad but we can fix this later
-        self._selected_keys = []
-
         self._key_list_box.show_all()
-
-        self.add(builder.get_object('main_vbox'))
-
-        self._update_button_state()
 
     def _get_actions(self):
         return [('key_management_window.do_create_key',  self.create_keys),
+                ('key_management_window.do_import_keys', self.import_keys),
                 ('key_management_window.do_edit_keys',   self.edit_keys),
                 ('key_management_window.do_fetch_keys',  self.fetch_keys),
                 ('key_management_window.do_upload_keys', self.upload_keys),
@@ -187,6 +195,15 @@ class KeyManagementWindow(GenericWindow):
         print("Edit Keys pressed...")
         UiUtils.show_unimplemented_message_box(self)
 
+    def import_keys(self, action=None, param=None):
+        print("Import Keys pressed...")
+        filename = UiUtils.get_filename(self)
+        if filename:
+            # TODO: Check validity
+            print("Chosen file to import:", filename)
+            if GpgUtils.import_key(filename):
+                self._refresh_key_list()
+
     def export_keys(self, action=None, param=None):
         print("Export Keys pressed...")
         UiUtils.show_unimplemented_message_box(self)
@@ -208,8 +225,7 @@ class KeyManagementWindow(GenericWindow):
             print("Delete key:", delete_result)
 
             if delete_result:
-                # TODO: Need to delete the widget that has this key
-                pass
+                self._refresh_key_list()
 
         print("Done deleting keys")
 
