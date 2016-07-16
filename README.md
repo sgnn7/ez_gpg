@@ -18,8 +18,20 @@ Personal take on what a GPG UI should look like
 ### In progress:
 ![Key Manag3ement Window](/screenshots/key_management.png?raw=true "Key Management Window")
 
+## Working
+- Basic multi-file encryption
+- Basic decryption
+ - Can detect if you have the needed decryption key
+ - Checks if your password is correct for selected key
+- Basic signing
+- Basic signature verification (detached signature)
+- Key import (armoured)
+- Key deletion (armoured)
+- Python packaging
+- fpm packaging
+
 ## Still missing:
-- Multi-file handling
+- Multi-file handling (sign, verify, decrypt)
 - Symetric encryption
 - Encryption/signing options
 - DnD
