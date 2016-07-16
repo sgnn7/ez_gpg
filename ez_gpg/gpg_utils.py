@@ -88,6 +88,11 @@ class GpgUtils(object):
     def import_key(filename):
         gpg = GpgUtils.get_gpg_keyring()
         key_data = None
+
+        if len(gpg.scan_keys(filename)) < 1:
+            print("Invalid file!")
+            return False
+
         with open (filename, "rb") as keyfile:
             key_data=keyfile.read()
 
@@ -95,7 +100,6 @@ class GpgUtils(object):
 
     @staticmethod
     def add_gpg_keys_to_combo_box(combo_box, secret=False):
-
         gpg_keys_list = Gtk.ListStore(str, str)
         for key in GpgUtils.get_gpg_keys(secret):
             key_id = key[0]

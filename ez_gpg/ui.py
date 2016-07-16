@@ -202,11 +202,14 @@ class KeyManagementWindow(GenericWindow):
         print("Import Keys pressed...")
         filename = UiUtils.get_filename(self)
         if filename:
-            # TODO: Check validity
             print("Chosen file to import:", filename)
             if GpgUtils.import_key(filename):
                 # TODO: Make the new key bold
                 self._refresh_key_list()
+            else:
+                UiUtils.show_dialog(self,
+                                    "ERROR! Keyfile could not be imported",
+                                    title="Keyfile error")
 
     def export_keys(self, action=None, param=None):
         print("Export Keys pressed...")
