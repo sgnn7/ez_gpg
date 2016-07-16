@@ -33,6 +33,7 @@ class UiUtils(object):
         filter_keys.set_name("Armoured keys")
         filter_keys.add_pattern("*.asc")
         filter_keys.add_pattern("*.key")
+        filter_keys.add_pattern("*.pub")
         dialog.add_filter(filter_keys)
 
         filter_any = Gtk.FileFilter()

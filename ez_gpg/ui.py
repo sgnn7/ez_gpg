@@ -148,7 +148,10 @@ class KeyManagementWindow(GenericWindow):
             # child.destroy()
             # TODO: Disconnect notify::active signal
 
-        for key_id, key_name, key_friendly_name, subkeys in GpgUtils.get_gpg_keys():
+        for key in GpgUtils.get_gpg_keys():
+            key_id = key[0]
+            key_friendly_name = key[2]
+
             key_row = Gtk.CheckButton(GObject.markup_escape_text(key_friendly_name))
             key_row.get_children()[0].set_use_markup(True)
             key_row.set_name(key_id)
@@ -202,6 +205,7 @@ class KeyManagementWindow(GenericWindow):
             # TODO: Check validity
             print("Chosen file to import:", filename)
             if GpgUtils.import_key(filename):
+                # TODO: Make the new key bold
                 self._refresh_key_list()
 
     def export_keys(self, action=None, param=None):
@@ -245,7 +249,10 @@ class EncryptWindow(GenericWindow):
         #      disable this for now
         self._armor_output_check_box.set_visible(False)
 
-        for key_id, key_name, key_friendly_name, subkeys in GpgUtils.get_gpg_keys():
+        for key in GpgUtils.get_gpg_keys():
+            key_id = key[0]
+            key_friendly_name = key[2]
+
             key_row = Gtk.CheckButton(key_friendly_name)
             key_row.set_name(key_id)
 
@@ -446,7 +453,7 @@ class DecryptWindow(GenericWindow):
         if len(matching_keys) == 0:
             return False
 
-        key_id, key_name, key_friendly_name, subkeys = matching_keys[0]
+        key_id, key_name, key_friendly_name, subkeys, _ = matching_keys[0]
         for subkey in subkeys:
             # print("Comparing %s in %s" % (subkey, info.key_ids))
             for encryption_key in info.key_ids:

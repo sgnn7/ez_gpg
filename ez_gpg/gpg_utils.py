@@ -18,6 +18,7 @@ class GpgUtils(object):
         # TODO: Get this working
         return gnupg.GPG()
 
+    # TODO: Make the keys be an object instead of tuple
     @staticmethod
     def get_gpg_keys(secret=False):
         gpg = GpgUtils.get_gpg_keyring()
@@ -25,7 +26,9 @@ class GpgUtils(object):
         keys = []
 
         for key in gpg.list_keys(secret):
+            # print(key)
             key_id = key['keyid']
+            fingerprint = key['fingerprint']
 
             key_name = key['uids'][0]
             if len(key_name) > 60:
@@ -37,7 +40,11 @@ class GpgUtils(object):
             for subkey in key['subkeys']:
                 subkeys.append(subkey[0])
 
-            keys.append((key_id, key_name, key_friendly_name, subkeys))
+            keys.append((key_id,
+                         key_name,
+                         key_friendly_name,
+                         subkeys,
+                         fingerprint))
 
         keys.sort(key=lambda key_tuple: key_tuple[1].lower())
 
@@ -73,11 +80,21 @@ class GpgUtils(object):
         public_key = GpgUtils.get_key_by_id(key_id)
         secret_key = GpgUtils.get_key_by_id(key_id, True)
 
-        delete_key_command = ['gpg', '--delete-key', '--batch', '--yes', key_id]
-        delete_secret_key_command = ['gpg', '--delete-secret-key', '--batch', '--yes', key_id]
+        delete_key_command = ['gpg',
+                              '--delete-key',
+                              '--batch',
+                              '--yes',
+                              key_id]
+
+        delete_secret_key_command = ['gpg',
+                                     '--delete-secret-key',
+                                     '--batch',
+                                     '--yes',
+                                     secret_key[4]] # Fingerprint = 5
 
         try:
             if secret_key:
+                # TODO: Confirm the deletion if we have a secret key
                 print("Secret key found. Deleting it")
                 subprocess.check_output(delete_secret_key_command)
 
@@ -102,7 +119,9 @@ class GpgUtils(object):
     def add_gpg_keys_to_combo_box(combo_box, secret=False):
 
         gpg_keys_list = Gtk.ListStore(str, str)
-        for key_id, key_name, key_friendly_name, subkeys in GpgUtils.get_gpg_keys(secret):
+        for key in GpgUtils.get_gpg_keys(secret):
+            key_id = key[0]
+            key_name = key[1]
             gpg_keys_list.append([key_id, key_name])
 
         cell = Gtk.CellRendererText()
