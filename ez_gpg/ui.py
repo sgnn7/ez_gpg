@@ -66,6 +66,9 @@ class GenericWindow(Gtk.Window):
         UiUtils.show_dialog(self,
                             message)
 
+    def confirm_action(self, message):
+        return UiUtils.confirm_dialog(self, message)
+
     def get_builder(self):
         return self._builder
 
@@ -225,6 +228,10 @@ class KeyManagementWindow(GenericWindow):
 
     def delete_keys(self, action=None, param=None):
         print("Delete Keys pressed...")
+        if not self.confirm_action("Are you sure you want to delete key ids: %s" % self._selected_keys):
+            print("Action cancelled!")
+            return
+
         # TODO: Show which keys we're deleting
         for key in self._selected_keys:
             print("Trying to delete", key[-7:])

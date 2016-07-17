@@ -63,6 +63,21 @@ class UiUtils(object):
         dialog.destroy()
         return filename
 
+    @staticmethod
+    def confirm_dialog(window, message):
+        dialog = Gtk.MessageDialog(window, 0,
+                                   Gtk.MessageType.QUESTION,
+                                   Gtk.ButtonsType.YES_NO,
+                                   "EzGPG")
+
+        dialog.format_secondary_text(message)
+        dialog.set_default_response(Gtk.ResponseType.NO)
+
+        response = dialog.run()
+        dialog.destroy()
+
+        return response == Gtk.ResponseType.YES
+
 class error_wrapper(object):
     """Error handler decorator"""
     def __init__(self, func):
