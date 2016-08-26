@@ -1,16 +1,21 @@
 # vim:ff=unix ts=4 sw=4 expandtab
 
-import gi
 import os
+
+# https://github.com/pypa/setuptools
 import pkg_resources
 
+# https://wiki.gnome.org/Projects/PyGObject
+import gi 
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
-
 from gi.repository import Gdk, Gio, GLib, GObject, Gtk
 
+# http://packages.python.org/python-gnupg/index.html
 from .gpg_utils import GpgUtils
+
 from .ui_utils import error_wrapper, UiUtils
+
 
 class GenericWindow(Gtk.Window):
     def __init__(self, app, window_name, title,
