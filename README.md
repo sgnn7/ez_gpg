@@ -44,6 +44,7 @@ Personal take on what a GPG UI should look like
 
 - `python3-setuptools` (`sudo apt-get install python3-setuptools`)
 - `python3-gnupg` (`sudo apt-get install python3-gnupg`)
+- `PyGObject` (`sudo apt-get install python3-gi`)
 
 ## Installation
 
