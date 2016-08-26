@@ -19,7 +19,10 @@ setup(
         ]
     },
 
-    install_requires = ['python-gnupg'],
+    install_requires = [
+        'python-gnupg', # http://packages.python.org/python-gnupg/index.html
+        'pygobject' # https://wiki.gnome.org/Projects/PyGObject
+    ],
 
     package_data = {
         '': ['*.ui', '*.md', '*.css'],
