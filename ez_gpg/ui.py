@@ -137,6 +137,23 @@ class KeyManagementWindow(GenericWindow):
         self._key_list_box = builder.get_object('lst_keys')
         self._refresh_key_list()
 
+        self._keyserver_combo = builder.get_object('cmb_keyserver')
+
+        # Populate keyserver list
+        keyserver_list = Gtk.ListStore(int, str)
+        for index, keyserver in enumerate(Config.get_keyservers()):
+            keyserver_list.append([index, keyserver])
+
+        cell = Gtk.CellRendererText()
+        self._keyserver_combo.pack_start(cell, True)
+        self._keyserver_combo.add_attribute(cell, 'text', 1)
+
+        self._keyserver_combo.set_model(keyserver_list)
+        self._keyserver_combo.set_entry_text_column(1)
+
+        # Set default keyserver
+        self._keyserver_combo.set_active(0)
+
         self._edit_key_button = builder.get_object('btn_edit')
         self._upload_key_button = builder.get_object('btn_upload')
         self._export_key_button = builder.get_object('btn_export')
