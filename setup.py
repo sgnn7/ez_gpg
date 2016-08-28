@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = "ezgpg",
-    version = "0.2.1",
+    version = "0.2.2",
     packages = find_packages(),
     zip_safe = True,
 
@@ -29,7 +29,7 @@ setup(
     author_email = "sgnn7@sgnn7.org",
     description = "Simplified GPG UI",
     license = "MIT",
-    url = "https://github.cpom/sgnn7/ez_gpg",
+    url = "https://github.com/sgnn7/ez_gpg",
     keywords = ["gpg", "gpg2", "pgp", "crypto", "cryptography"],
     classifiers = [
         "Programming Language :: Python :: 3 :: Only",
