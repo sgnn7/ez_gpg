@@ -6,7 +6,7 @@ if [ -z "$(which fpm)" ]; then
 fi
 
 package_type="deb"
-if [ $# -gt 1 ]; then
+if [ $# -gt 0 ]; then
   package_type=$1
 fi
 
