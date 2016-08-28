@@ -6,9 +6,17 @@
 }
 
 GtkListBoxRow:nth-child(even) {
-  background-color: #F7F0F0
+  background-color: #F7F0F0;
 }
 
-GtkListBoxRow:hover {
-  background-color: #D0D0D7
+GtkListBoxRow:nth-child(odd) {
+  background-color: #FFF;
+}
+
+GtkListBoxRow:hover,
+GtkListBoxRow:active,
+GtkListBoxRow:selected,
+GtkListBoxRow:focus {
+  background-color: #D0D0D7;
+  color: #000;
 }
