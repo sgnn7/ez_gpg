@@ -4,3 +4,11 @@
 #gpg_key_list {
   padding: 0.1em;
 }
+
+GtkListBoxRow:nth-child(even) {
+  background-color: #F7F0F0
+}
+
+GtkListBoxRow:hover {
+  background-color: #D0D0D7
+}
