@@ -10,6 +10,7 @@ from os.path import expanduser
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
+from .config import Config
 from .ui_utils import UiUtils
 
 class GpgUtils(object):
@@ -34,7 +35,7 @@ class GpgUtils(object):
             if len(key_name) > 60:
                 key_name = key_name[:60] + '...'
 
-            key_friendly_name = "%s |%s|" % (key_name, key_id[-8:])
+            key_friendly_name = "%s |%s|" % (key_name, key_id[-Config.KEY_ID_SIZE:])
 
             subkeys = []
             for subkey in key['subkeys']:

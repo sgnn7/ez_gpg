@@ -9,6 +9,7 @@ gi.require_version('Gdk', '3.0')
 
 from gi.repository import Gdk, Gio, GLib, GObject, Gtk
 
+from .config import Config
 from .gpg_utils import GpgUtils
 from .ui_utils import error_wrapper, UiUtils
 
@@ -183,7 +184,7 @@ class KeyManagementWindow(GenericWindow):
 
         print("New selection list:")
         for key in self._selected_keys:
-            print("Key:", key[-8:])
+            print("Key:", key[-Config.KEY_ID_SIZE:])
 
         self._update_button_state()
 
