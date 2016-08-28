@@ -1,6 +1,10 @@
 # ez_gpg
 Personal take on what a GPG UI should look like
 
+## Releases
+
+[Latest (v0.2.2; deb, rpm, egg, zip)](https://github.com/sgnn7/ez_gpg/releases "Releases")
+
 ## Screenshots
 
 ![Main Window](/screenshots/main_screen.png?raw=true "Main Window")
@@ -9,14 +13,14 @@ Personal take on what a GPG UI should look like
 
 ![Signing Window (bad pass)](/screenshots/sign_bad_pw.png?raw=true "Signing Window (bad pass)")
 
-![Decrpytion Window (symetric)](/screenshots/decrypt_symetric.png?raw=true "Decryption Window (symetric)")
+![Decrypytion Window (symetric)](/screenshots/decrypt_symetric.png?raw=true "Decryption Window (symetric)")
 
-![Decrpytion  Window](/screenshots/decrypt.png?raw=true "Decrpytion  Window")
+![Decrypytion  Window](/screenshots/decrypt.png?raw=true "Decryption  Window")
 
 ![Verification Window](/screenshots/verify.png?raw=true "Verification Window")
 
 ### In progress:
-![Key Manag3ement Window](/screenshots/key_management.png?raw=true "Key Management Window")
+![Key Management Window](/screenshots/key_management.png?raw=true "Key Management Window")
 
 ## Working
 - Basic multi-file encryption
