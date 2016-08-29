@@ -82,6 +82,7 @@ class GpgUtils(object):
 
         # We won't be like the other GPG clients!
         if fetch_result.count > 1:
+            # TODO: Search for keys first just in case before importing
             print("WARNING! Multiple keys imported! Possible rogue certs!")
             print("Deleting rogue certs:", fetch_result.fingerprints)
 

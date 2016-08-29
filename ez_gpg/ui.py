@@ -280,7 +280,9 @@ class KeyManagementWindow(GenericWindow):
         if key_id.startswith('0x'):
             key_id = key_id[2:]
 
-        print("Key ID '%s' requested" % key_id)
+        # TODO: Check that the string is hex
+
+        print("Key ID '0x%s' requested" % key_id)
 
         if len(key_id) not in [ 8, 16, 40 ]:
             self._show_error_message("Key ID (%s) is not the correct length!" % key_id)
