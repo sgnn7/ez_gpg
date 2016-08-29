@@ -75,8 +75,8 @@ class UiUtils(object):
         filter_binary_key.add_pattern("*.gpg")
         dialog.add_filter(filter_binary_key)
 
+    @staticmethod
     def get_save_filename(window, filename, title="Save..."):
-        print(filename)
         dialog = Gtk.FileChooserDialog(title,
                                        window,
                                        Gtk.FileChooserAction.SAVE,
@@ -87,7 +87,7 @@ class UiUtils(object):
 
         dialog.set_default_response(Gtk.ResponseType.OK)
         dialog.set_do_overwrite_confirmation(True)
-        dialog.set_filename(filename)
+        dialog.set_current_name(filename)
         UiUtils._set_save_keyfile_filter(dialog)
 
         response = dialog.run()

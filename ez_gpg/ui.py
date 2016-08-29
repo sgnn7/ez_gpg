@@ -248,10 +248,15 @@ class KeyManagementWindow(GenericWindow):
         key_name = key_name.replace('|','')
         key_name = key_name.replace('<','(')
         key_name = key_name.replace('>',')')
-        key_name = re.sub(r'[^\.@a-zA-Z0-9()]+','_', key_name)
+        key_name = re.sub(r'[^@a-zA-Z0-9()]+','_', key_name)
         key_name = re.sub(r'__+','_', key_name)
 
         filename, armor = UiUtils.get_save_filename(self, key_name)
+
+        if not filename:
+            print("Export cancelled")
+            return
+
         print("Export target:", filename)
 
         GpgUtils.export_key(key_id, filename, armor)
