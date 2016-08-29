@@ -83,6 +83,14 @@ class GpgUtils(object):
         # We won't be like the other GPG clients!
         if fetch_result.count > 1:
             # TODO: Search for keys first just in case before importing
+            # XXX: The more I think about this, the more the deletion of duplicate
+            #      keys makes sense because if there are any, they're bad and we
+            #      wipe them out but more importantly if the user tried to do this
+            #      before, he/she may not be careful about things so we should "do
+            #      the right thing" and wipe out anything matching localy as well
+            #      since the rogue key(s) may have been fetched using other tools
+            #      that just don't tell you or warn you about how many keys you've
+            #      imported during a fetch.
             print("WARNING! Multiple keys imported! Possible rogue certs!")
             print("Deleting rogue certs:", fetch_result.fingerprints)
 
