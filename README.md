@@ -31,7 +31,10 @@ Personal take on what a GPG UI should look like
 - Basic signature verification (detached signature)
 - Key import (armored)
 - Key deletion (armored)
+- Key export (armored and binary)
+- Keyserver fetch of key (with rogue cert checking)
 - Python packaging
+- Mnemonics (keyboard shortcuts)
 - fpm packaging
 
 ## Still missing:
@@ -40,6 +43,11 @@ Personal take on what a GPG UI should look like
 - Encryption/signing options
 - DnD
 - Key management
+ - Key creation
+ - Push to remote keyserver
+ - Key signing
+ - Key revocation
+ - Key signature update from keyserver
 - <del>PyPI packaging that works</del>
 - <del>Debian packaging</del>
 - PPA
