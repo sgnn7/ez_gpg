@@ -115,7 +115,7 @@
         <property name="baseline_position">top</property>
         <child>
           <object class="GtkButton" id="btn_do_verify">
-            <property name="label" translatable="yes">Verify</property>
+            <property name="label" translatable="yes">_Verify</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
@@ -127,6 +127,7 @@
             <property name="vexpand">False</property>
             <property name="action_name">app.verify_window.do_verify</property>
             <property name="relief">half</property>
+            <property name="use_underline">True</property>
           </object>
           <packing>
             <property name="expand">False</property>

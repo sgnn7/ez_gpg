@@ -32,13 +32,14 @@
         </child>
         <child>
           <object class="GtkButton" id="btn_import">
-            <property name="label" translatable="yes">Import</property>
+            <property name="label" translatable="yes">_Import</property>
             <property name="visible">True</property>
             <property name="sensitive">False</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
             <property name="hexpand">True</property>
             <property name="action_name">app.key_management_window.do_import_keys</property>
+            <property name="use_underline">True</property>
             <property name="always_show_image">True</property>
           </object>
           <packing>
@@ -67,12 +68,13 @@
         </child>
         <child>
           <object class="GtkButton" id="btn_fetch">
-            <property name="label">Fetch</property>
+            <property name="label">_Fetch</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
             <property name="hexpand">True</property>
             <property name="action_name">app.key_management_window.do_fetch_keys</property>
+            <property name="use_underline">True</property>
             <property name="always_show_image">True</property>
           </object>
           <packing>
@@ -83,13 +85,14 @@
         </child>
         <child>
           <object class="GtkButton" id="btn_upload">
-            <property name="label" translatable="yes">Upload</property>
+            <property name="label" translatable="yes">_Upload</property>
             <property name="visible">True</property>
             <property name="sensitive">False</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
             <property name="hexpand">True</property>
             <property name="action_name">app.key_management_window.do_upload_keys</property>
+            <property name="use_underline">True</property>
             <property name="always_show_image">True</property>
           </object>
           <packing>
@@ -100,12 +103,13 @@
         </child>
         <child>
           <object class="GtkButton" id="btn_export">
-            <property name="label">Export</property>
+            <property name="label">E_xport</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
             <property name="hexpand">True</property>
             <property name="action_name">app.key_management_window.do_export_keys</property>
+            <property name="use_underline">True</property>
             <property name="always_show_image">True</property>
           </object>
           <packing>

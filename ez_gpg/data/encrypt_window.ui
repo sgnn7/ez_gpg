@@ -125,7 +125,7 @@
         </child>
         <child>
           <object class="GtkButton" id="btn_do_encrypt">
-            <property name="label" translatable="yes">Encrypt</property>
+            <property name="label" translatable="yes">_Encrypt</property>
             <property name="name">btn_do_encrypt</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
@@ -137,6 +137,7 @@
             <property name="hexpand">False</property>
             <property name="vexpand">False</property>
             <property name="action_name">app.encrypt_window.do_encrypt</property>
+            <property name="use_underline">True</property>
           </object>
           <packing>
             <property name="expand">False</property>
