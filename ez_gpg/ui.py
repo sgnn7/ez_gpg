@@ -141,15 +141,16 @@ class KeyManagementWindow(GenericWindow):
         self._keyserver_combo = builder.get_object('cmb_keyserver')
 
         # Populate keyserver list
-        keyserver_list = Gtk.ListStore(int, str)
-        for index, keyserver in enumerate(Config.get_keyservers()):
-            keyserver_list.append([index, keyserver])
+        keyserver_list = Gtk.ListStore(str, str)
+        for keyserver in Config.get_keyservers():
+            keyserver_list.append([keyserver, keyserver])
 
         cell = Gtk.CellRendererText()
         self._keyserver_combo.pack_start(cell, True)
         self._keyserver_combo.add_attribute(cell, 'text', 1)
 
         self._keyserver_combo.set_model(keyserver_list)
+        self._keyserver_combo.set_id_column(0)
         self._keyserver_combo.set_entry_text_column(1)
 
         # Set default keyserver
@@ -269,7 +270,56 @@ class KeyManagementWindow(GenericWindow):
 
     def fetch_keys(self, action=None, param=None):
         print("Fetch Keys pressed...")
-        UiUtils.show_unimplemented_message_box(self)
+        key_id = UiUtils.get_string_from_user(self, "Enter key ID to fetch from server:",
+                                              max_length=42)
+
+        if not key_id:
+            print("Fetch cancelled")
+            return
+
+        if key_id.startswith('0x'):
+            key_id = key_id[2:]
+
+        print("Key ID '%s' requested" % key_id)
+
+        if len(key_id) not in [ 8, 16, 40 ]:
+            self._show_error_message("Key ID (%s) is not the correct length!" % key_id)
+            return
+
+        if len(key_id) == 8:
+            do_it = UiUtils.confirm_dialog(self,
+                                           "Careful! Short IDs (8-letter IDs) are easily " +
+                                           "duplicated/faked!\n" +
+                                           "Are you sure you want to proceed with this " +
+                                           "(dangerous) operation?")
+            if not do_it:
+                return
+
+        if len(key_id) == 16:
+            do_it = UiUtils.confirm_dialog(self,
+                                           "Careful! Long IDs (16-letter IDs) could be " +
+                                           "duplicated/faked!\n" +
+                                           "Are you sure you want to proceed with this "
+                                           "operation?")
+            if not do_it:
+                return
+
+        keyserver = self._keyserver_combo.get_active_id()
+        try:
+            fingerprint = GpgUtils.fetch_key(keyserver, key_id)
+            if not fingerprint:
+                self._show_error_message("ERROR! Could not fetch key with ID '0x%s'" % key_id)
+                return
+        except Exception as e:
+            self._show_error_message(str(e))
+            return
+
+        print("Fetched:", fingerprint)
+        UiUtils.show_dialog(self,
+                            "Successful import of '0x%s':!\n" % key_id +
+                            "Fingerprint: " + fingerprint,
+                            title="Fetch success",
+                            message_type=Gtk.MessageType.INFO)
 
     def delete_keys(self, action=None, param=None):
         print("Delete Keys pressed...")

@@ -17,7 +17,8 @@ class UiUtils(object):
 
     @staticmethod
     def show_dialog(window, message, title="EzGpG", message_type=Gtk.MessageType.WARNING):
-        dialog = Gtk.MessageDialog(window, 0,
+        dialog = Gtk.MessageDialog(window,
+                                   Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
                                    message_type,
                                    Gtk.ButtonsType.OK,
                                    title)
@@ -112,6 +113,48 @@ class UiUtils(object):
 
         dialog.destroy()
         return filename, armor
+
+    @staticmethod
+    def get_string_from_user(window, message, title="Input required", max_length=None):
+        dialog = Gtk.MessageDialog(window,
+                                   Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
+                                   Gtk.MessageType.QUESTION,
+                                   Gtk.ButtonsType.OK_CANCEL,
+                                   message)
+        dialog.set_title(title)
+
+        dialog.set_default_response(Gtk.ResponseType.OK)
+
+        dialog_box = dialog.get_content_area()
+
+        input_entry = Gtk.Entry()
+        input_entry.set_size_request(350,0)
+
+        if max_length != None:
+            print("Setting max length to", max_length)
+            input_entry.set_max_length(max_length)
+
+        input_entry_holder = Gtk.Box()
+        input_entry_holder.pack_end(input_entry, True, False, 0)
+
+        dialog_box.pack_end(input_entry_holder, False, False, 0)
+        dialog.show_all()
+
+        def input_entry_activate(*args):
+            print("Enter pressed")
+            dialog.response(Gtk.ResponseType.OK)
+
+        input_entry.connect('activate', input_entry_activate)
+
+        response = dialog.run()
+        text = input_entry.get_text()
+
+        dialog.destroy()
+
+        if (response != Gtk.ResponseType.OK) or len(text) == 0:
+            return None
+
+        return text
 
     @staticmethod
     def confirm_dialog(window, message):

@@ -72,6 +72,35 @@ class GpgUtils(object):
         return True
 
     @staticmethod
+    def fetch_key(keyserver, key_id):
+        gpg = GpgUtils.get_gpg_keyring()
+        print("Fetching '0x%s' from %s" % (key_id, keyserver))
+        fetch_result = gpg.recv_keys(keyserver, key_id)
+
+        if fetch_result.count == 0:
+            return None
+
+        # We won't be like the other GPG clients!
+        if fetch_result.count > 1:
+            print("WARNING! Multiple keys imported! Possible rogue certs!")
+            print("Deleting rogue certs:", fetch_result.fingerprints)
+
+            result = gpg.delete_keys(fetch_result.fingerprints)
+            # XXX: This is the lamest API ever
+            if not str(result) == 'ok':
+                print("Failed to delete keys (%s)" % result, fetch_result.fingerprints)
+
+            if GpgUtils.get_key_by_id(key_id) != None:
+                raise("Could not clean up rogue certs with suffix '0x%s'" % key_id)
+
+            raise RuntimeError("WARNING! Duplicate/rogue certs fetched due " + \
+                               "to colliding key ID (but we removed them so you're safe)!")
+
+        print("Result:", fetch_result.fingerprints)
+
+        return fetch_result.fingerprints[0]
+
+    @staticmethod
     def delete_key(key_id):
         gpg = GpgUtils.get_gpg_keyring()
 
