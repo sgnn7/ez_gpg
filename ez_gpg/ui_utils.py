@@ -64,6 +64,56 @@ class UiUtils(object):
         return filename
 
     @staticmethod
+    def _set_save_keyfile_filter(dialog):
+        filter_armor_key = Gtk.FileFilter()
+        filter_armor_key.set_name("Armored key")
+        filter_armor_key.add_pattern("*.asc")
+        dialog.add_filter(filter_armor_key)
+
+        filter_binary_key = Gtk.FileFilter()
+        filter_binary_key.set_name("Encoded key")
+        filter_binary_key.add_pattern("*.gpg")
+        dialog.add_filter(filter_binary_key)
+
+    def get_save_filename(window, filename, title="Save..."):
+        print(filename)
+        dialog = Gtk.FileChooserDialog(title,
+                                       window,
+                                       Gtk.FileChooserAction.SAVE,
+                                       (Gtk.STOCK_CANCEL,
+                                        Gtk.ResponseType.CANCEL,
+                                        Gtk.STOCK_SAVE,
+                                        Gtk.ResponseType.ACCEPT))
+
+        dialog.set_default_response(Gtk.ResponseType.OK)
+        dialog.set_do_overwrite_confirmation(True)
+        dialog.set_filename(filename)
+        UiUtils._set_save_keyfile_filter(dialog)
+
+        response = dialog.run()
+
+        filename = None
+        armor = True
+        if response == Gtk.ResponseType.ACCEPT:
+            filename = dialog.get_filename()
+
+            if dialog.get_filter().get_name() == 'Encoded key':
+                armor = False
+
+            # Suffix the filename
+            if not (filename.endswith('.asc') or filename.endswith('.gpg')):
+                suffix = '.asc'
+                if not armor:
+                    suffix = '.gpg'
+
+                filename += suffix
+
+            print("Filename chosen as:", filename)
+
+        dialog.destroy()
+        return filename, armor
+
+    @staticmethod
     def confirm_dialog(window, message):
         dialog = Gtk.MessageDialog(window, 0,
                                    Gtk.MessageType.QUESTION,

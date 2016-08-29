@@ -62,6 +62,16 @@ class GpgUtils(object):
         return None
 
     @staticmethod
+    def export_key(key_id, filename, armor):
+        gpg = GpgUtils.get_gpg_keyring()
+
+        key_data = gpg.export_keys(key_id, armor=armor)
+        with open(filename, 'wb') as exported_key:
+            exported_key.write(key_data.encode('utf-8'))
+
+        return True
+
+    @staticmethod
     def delete_key(key_id):
         gpg = GpgUtils.get_gpg_keyring()
 

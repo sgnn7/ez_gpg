@@ -3,6 +3,7 @@
 import gi
 import os
 import pkg_resources
+import re
 
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
@@ -234,7 +235,28 @@ class KeyManagementWindow(GenericWindow):
 
     def export_keys(self, action=None, param=None):
         print("Export Keys pressed...")
-        UiUtils.show_unimplemented_message_box(self)
+        UiUtils.show_dialog(self,
+                            "This function only exports the public key!",
+                            title="Notice")
+
+        key_id = self._selected_keys[0]
+        key = GpgUtils.get_key_by_id(key_id)
+        key_name = key[2]
+
+        # Turn key name into something FS-friendly
+        # XXX: There's probably a better way to do this
+        key_name = key_name.replace('|','')
+        key_name = key_name.replace('<','(')
+        key_name = key_name.replace('>',')')
+        key_name = re.sub(r'[^\.@a-zA-Z0-9()]+','_', key_name)
+        key_name = re.sub(r'__+','_', key_name)
+
+        filename, armor = UiUtils.get_save_filename(self, key_name)
+        print("Export target:", filename)
+
+        GpgUtils.export_key(key_id, filename, armor)
+
+        print("Key exported as %s..." % filename)
 
     def upload_keys(self, action=None, param=None):
         print("Upload Keys pressed...")
