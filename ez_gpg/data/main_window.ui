@@ -20,7 +20,7 @@
         <property name="homogeneous">True</property>
         <child>
           <object class="GtkButton" id="btn_encrypt">
-            <property name="label" translatable="yes">Encrypt</property>
+            <property name="label" translatable="yes">_Encrypt</property>
             <property name="width_request">100</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
@@ -31,6 +31,7 @@
             <property name="hexpand">True</property>
             <property name="vexpand">True</property>
             <property name="action_name">app.show_encrypt_ui</property>
+            <property name="use_underline">True</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -40,7 +41,7 @@
         </child>
         <child>
           <object class="GtkButton" id="btn_decrypt">
-            <property name="label" translatable="yes">Decrypt</property>
+            <property name="label" translatable="yes">_Decrypt</property>
             <property name="width_request">100</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
@@ -51,6 +52,7 @@
             <property name="hexpand">True</property>
             <property name="vexpand">True</property>
             <property name="action_name">app.show_decrypt_ui</property>
+            <property name="use_underline">True</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -77,7 +79,7 @@
         <property name="homogeneous">True</property>
         <child>
           <object class="GtkButton" id="btn_sign">
-            <property name="label" translatable="yes">Sign</property>
+            <property name="label" translatable="yes">_Sign</property>
             <property name="width_request">100</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
@@ -88,6 +90,7 @@
             <property name="hexpand">True</property>
             <property name="vexpand">True</property>
             <property name="action_name">app.show_sign_ui</property>
+            <property name="use_underline">True</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -97,7 +100,7 @@
         </child>
         <child>
           <object class="GtkButton" id="btn_verify">
-            <property name="label" translatable="yes">Verify</property>
+            <property name="label" translatable="yes">_Verify</property>
             <property name="width_request">100</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
@@ -108,6 +111,7 @@
             <property name="hexpand">True</property>
             <property name="vexpand">True</property>
             <property name="action_name">app.show_verify_ui</property>
+            <property name="use_underline">True</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -124,7 +128,7 @@
     </child>
     <child>
       <object class="GtkButton" id="btn_key_management">
-        <property name="label" translatable="yes">Key Management</property>
+        <property name="label" translatable="yes">_Key Management</property>
         <property name="name">btn_key_management</property>
         <property name="visible">True</property>
         <property name="can_focus">True</property>
@@ -136,6 +140,7 @@
         <property name="hexpand">True</property>
         <property name="vexpand">False</property>
         <property name="action_name">app.key_management</property>
+        <property name="use_underline">True</property>
       </object>
       <packing>
         <property name="expand">False</property>
