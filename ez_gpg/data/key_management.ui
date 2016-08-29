@@ -15,13 +15,13 @@
         <property name="hexpand">True</property>
         <child>
           <object class="GtkButton" id="btn_new">
-            <property name="label">gtk-add</property>
+            <property name="label">_Create</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
             <property name="hexpand">True</property>
             <property name="action_name">app.key_management_window.do_create_key</property>
-            <property name="use_stock">True</property>
+            <property name="use_underline">True</property>
             <property name="always_show_image">True</property>
           </object>
           <packing>
@@ -50,14 +50,14 @@
         </child>
         <child>
           <object class="GtkButton" id="btn_edit">
-            <property name="label">gtk-edit</property>
+            <property name="label">_Edit</property>
             <property name="visible">True</property>
             <property name="sensitive">False</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
             <property name="hexpand">True</property>
             <property name="action_name">app.key_management_window.do_edit_keys</property>
-            <property name="use_stock">True</property>
+            <property name="use_underline">True</property>
             <property name="always_show_image">True</property>
           </object>
           <packing>
