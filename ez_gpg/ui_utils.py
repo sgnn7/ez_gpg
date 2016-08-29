@@ -30,7 +30,7 @@ class UiUtils(object):
     @staticmethod
     def _set_keyfile_filter(dialog):
         filter_keys = Gtk.FileFilter()
-        filter_keys.set_name("Armoured keys")
+        filter_keys.set_name("Armored keys")
         filter_keys.add_pattern("*.asc")
         filter_keys.add_pattern("*.key")
         filter_keys.add_pattern("*.pub")

@@ -29,8 +29,8 @@ Personal take on what a GPG UI should look like
  - Checks if your password is correct for selected key
 - Basic signing
 - Basic signature verification (detached signature)
-- Key import (armoured)
-- Key deletion (armoured)
+- Key import (armored)
+- Key deletion (armored)
 - Python packaging
 - fpm packaging
 
