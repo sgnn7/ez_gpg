@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = "ezgpg",
-    version = "0.2.2",
+    version = "0.2.3",
     packages = find_packages(),
     zip_safe = True,
 

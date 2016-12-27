@@ -3,13 +3,15 @@ Personal take on what a usable GPG app should be like
 
 ## Releases
 
-[Latest (v0.2.2; deb, rpm, egg, zip)](https://github.com/sgnn7/ez_gpg/releases "Releases")
+[Latest (v0.2.3; deb, rpm, egg, zip)](https://github.com/sgnn7/ez_gpg/releases "Releases")
 
 ## Screenshots
 
 ![Main Window](/screenshots/main_screen.png?raw=true "Main Window")
 
-![Encryption Window](/screenshots/encrypt.png?raw=true "Encryption Window")
+![Encryption Window](/screenshots/encrypt_pki.png?raw=true "Encryption Window")
+
+![Encryption Window](/screenshots/encrypt_symetric.png?raw=true "Encryption Window")
 
 ![Signing Window (bad pass)](/screenshots/sign_bad_pw.png?raw=true "Signing Window (bad pass)")
 
