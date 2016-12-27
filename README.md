@@ -24,6 +24,8 @@ Personal take on what a usable GPG app should be like
 
 ## Working
 - Basic multi-file encryption
+ - PKI
+ - Symetric
 - Basic decryption
  - Can detect if you have the needed decryption key
  - Checks if your password is correct for selected key
@@ -39,7 +41,6 @@ Personal take on what a usable GPG app should be like
 
 ## Still missing:
 - Multi-file handling (sign, verify, decrypt)
-- Symetric encryption
 - Encryption/signing options
 - DnD
 - Key management
@@ -48,9 +49,10 @@ Personal take on what a usable GPG app should be like
  - Key signing
  - Key revocation
  - Key signature update from keyserver
+- PPA
+- <del>Symetric encryption</del>
 - <del>PyPI packaging that works</del>
 - <del>Debian packaging</del>
-- PPA
 
 ## Prerequisites
 
