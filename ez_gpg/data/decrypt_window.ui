@@ -66,7 +66,6 @@
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="visibility">False</property>
-            <property name="invisible_char">●</property>
             <property name="placeholder_text" translatable="yes">Key Password</property>
             <property name="input_purpose">password</property>
             <signal name="changed" handler="password_changed" swapped="no"/>

@@ -352,6 +352,9 @@ class EncryptWindow(GenericWindow):
         self._encrypt_spinner = builder.get_object('spn_encrypt')
         self._encrypt_button = builder.get_object('btn_do_encrypt')
 
+        self._password_field = builder.get_object('ent_password')
+        self._confirm_password_field = builder.get_object('ent_confirm_password')
+
         # XXX: Armor param doesn't seem to produce armored output so we
         #      disable this for now
         self._armor_output_check_box.set_visible(False)
@@ -367,11 +370,30 @@ class EncryptWindow(GenericWindow):
 
         self._key_list_box.show_all()
 
+        builder.connect_signals({'password_changed': self._check_password_matching})
+
         self.add(builder.get_object('encrypt_window_vbox'))
 
     def _get_actions(self):
         return [('encrypt_window.do_encrypt', self.do_encrypt),
                 ]
+
+    def _check_password_matching(self, widget):
+        window = widget.get_toplevel()
+        password_field = window._password_field
+        confirm_password_field = window._confirm_password_field
+
+        password = password_field.get_text()
+        confirmed_password = confirm_password_field.get_text()
+
+        if password == None or confirmed_password == None:
+            confirm_password_field.set_icon_from_stock(1, None)
+        else:
+            if password == confirmed_password:
+                confirm_password_field.set_icon_from_stock(1, None)
+            else:
+                confirm_password_field.set_icon_from_stock(1, Gtk.STOCK_DIALOG_ERROR)
+                confirm_password_field.set_icon_tooltip_text(1, "Passwords do not match!")
 
     def do_encrypt(self, action=None, param=None):
         print("Clicked Encrypt Content button")
