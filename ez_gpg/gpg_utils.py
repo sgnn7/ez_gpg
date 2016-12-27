@@ -163,7 +163,7 @@ class GpgUtils(object):
         combo_box.set_entry_text_column(1)
 
     @staticmethod
-    def encrypt_files(window, filenames, key_ids, use_armor=True, callback=None):
+    def encrypt_files_pki(window, filenames, key_ids, use_armor=True, callback=None):
         conversion_list = []
         for filename in filenames:
             dest_filename = "%s.gpg" % filename
@@ -191,7 +191,42 @@ class GpgUtils(object):
             callback(window)
 
         UiUtils.show_dialog(window,
-                            "Completed!",
+                            "Encrypted!",
+                            message_type=Gtk.MessageType.INFO)
+
+    @staticmethod
+    def encrypt_files_symetric(window, filenames, password, use_armor=True, callback=None):
+        conversion_list = []
+        for filename in filenames:
+            dest_filename = "%s.gpg" % filename
+            conversion_list.append((filename, dest_filename))
+
+        print(" - Armor:", use_armor)
+
+        gpg = GpgUtils.get_gpg_keyring()
+
+        for filename, dest_filename in conversion_list:
+            print("Encrypting %s to %s" % (filename, dest_filename))
+
+            with open(filename, 'rb') as src_file:
+                status = gpg.encrypt_file(src_file,
+                                          (),
+                                          passphrase=password,
+                                          symmetric=True,
+                                          # This just means that PKI recipients aren't provided
+                                          # See https://github.com/isislovecruft/python-gnupg/issues/110
+                                          armor=use_armor,     # XXX: This doesn't seem to work :(
+                                          output=dest_filename)
+            print("Status: %s" % status)
+
+            print("Encrypted %s to %s" % (filename, dest_filename))
+
+        # Stop spinner when we return
+        if callback:
+            callback(window)
+
+        UiUtils.show_dialog(window,
+                            "Encrypted!",
                             message_type=Gtk.MessageType.INFO)
 
     @staticmethod

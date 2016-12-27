@@ -352,6 +352,7 @@ class EncryptWindow(GenericWindow):
         self._encrypt_spinner = builder.get_object('spn_encrypt')
         self._encrypt_button = builder.get_object('btn_do_encrypt')
 
+        self._encryption_type = builder.get_object('ntb_encryption_type')
         self._password_field = builder.get_object('ent_password')
         self._confirm_password_field = builder.get_object('ent_confirm_password')
 
@@ -408,6 +409,50 @@ class EncryptWindow(GenericWindow):
             self._show_error_message("File not selected!")
             return
 
+        use_armor = self._armor_output_check_box.get_active()
+        print("Armor output: %s" % use_armor)
+
+        is_pki_encryption = self._encryption_type.get_current_page() == 0
+        print(" Using PKI:", is_pki_encryption)
+
+        if is_pki_encryption:
+            self._encrypt_pki(filenames, use_armor)
+        else:
+            self._encrypt_symetric(filenames, use_armor)
+
+
+    def _encrypt_symetric(self, filenames, use_armor):
+        password_field = self._password_field
+        confirm_password_field = self._confirm_password_field
+
+        password = password_field.get_text()
+        confirmed_password = confirm_password_field.get_text()
+
+        if password == None or confirmed_password == None:
+            self._show_error_message("No password set!")
+            return
+        elif password != confirmed_password:
+            self._show_error_message("Passwords do not match!")
+            return
+
+        print(" - Locking UI and showing spinner.")
+        self._encrypt_button.set_sensitive(False)
+        self._encrypt_spinner.start()
+
+        # XXX / TODO: We're having our main thread blocked by gnupg work
+        #             so we need to add threading at some point.
+        def finished_encryption_cb(self):
+            print(" - Finished. Stopping spinner.")
+            self._encrypt_spinner.stop()
+
+        GpgUtils.encrypt_files_symetric(self, filenames, password,
+                                        use_armor, callback=finished_encryption_cb)
+
+        self.destroy()
+
+
+
+    def _encrypt_pki(self, filenames, use_armor):
         print(" - Checking GPG key selection")
         selected_keys = []
         for list_box_row in self._key_list_box.get_children():
@@ -423,9 +468,6 @@ class EncryptWindow(GenericWindow):
             self._show_error_message("No key selected!")
             return
 
-        use_armor = self._armor_output_check_box.get_active()
-        print("Armor output: %s" % use_armor)
-
         # Disable encrypt button if we're in the middle of encryption
         print(" - Locking UI and showing spinner.")
         self._encrypt_button.set_sensitive(False)
@@ -437,11 +479,10 @@ class EncryptWindow(GenericWindow):
             print(" - Finished. Stopping spinner.")
             self._encrypt_spinner.stop()
 
-        GpgUtils.encrypt_files(self, filenames, selected_keys, use_armor,
-                                 callback=finished_encryption_cb)
+        GpgUtils.encrypt_files_pki(self, filenames, selected_keys,
+                                   use_armor, callback=finished_encryption_cb)
 
         self.destroy()
-
 
 class SignWindow(GenericWindow):
     def __init__(self, app):
