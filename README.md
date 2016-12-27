@@ -9,13 +9,13 @@ Personal take on what a usable GPG app should be like
 
 ![Main Window](/screenshots/main_screen.png?raw=true "Main Window")
 
-![Encryption Window](/screenshots/encrypt_pki.png?raw=true "Encryption Window")
+![Encryption Window](/screenshots/encrypt_pki.png?raw=true "Encryption Window (PKI)")
 
-![Encryption Window](/screenshots/encrypt_symetric.png?raw=true "Encryption Window")
+![Encryption Window](/screenshots/encrypt_symmetric.png?raw=true "Encryption Window (Symmetric)")
 
 ![Signing Window (bad pass)](/screenshots/sign_bad_pw.png?raw=true "Signing Window (bad pass)")
 
-![Decrypytion Window (symetric)](/screenshots/decrypt_symetric.png?raw=true "Decryption Window (symetric)")
+![Decrypytion Window (symmetric)](/screenshots/decrypt_symmetric.png?raw=true "Decryption Window (symmetric)")
 
 ![Decrypytion  Window](/screenshots/decrypt.png?raw=true "Decryption  Window")
 
@@ -27,7 +27,7 @@ Personal take on what a usable GPG app should be like
 ## Working
 - Basic multi-file encryption
  - PKI
- - Symetric
+ - Symmetric
 - Basic decryption
  - Can detect if you have the needed decryption key
  - Checks if your password is correct for selected key
@@ -52,7 +52,7 @@ Personal take on what a usable GPG app should be like
  - Key revocation
  - Key signature update from keyserver
 - PPA
-- <del>Symetric encryption</del>
+- <del>Symmetric encryption</del>
 - <del>PyPI packaging that works</del>
 - <del>Debian packaging</del>
 

@@ -195,7 +195,7 @@ class GpgUtils(object):
                             message_type=Gtk.MessageType.INFO)
 
     @staticmethod
-    def encrypt_files_symetric(window, filenames, password, use_armor=True, callback=None):
+    def encrypt_files_symmetric(window, filenames, password, use_armor=True, callback=None):
         conversion_list = []
         for filename in filenames:
             dest_filename = "%s.gpg" % filename
@@ -318,7 +318,7 @@ class GpgUtils(object):
     def get_encryped_file_info(window, filename):
         class Info(object):
             def __init__(self):
-                self.is_symetric = False
+                self.is_symmetric = False
                 self.key_ids = []
                 self.matching_key = None
 
@@ -357,7 +357,7 @@ class GpgUtils(object):
         gpg_file_info_results = gpg_file_info_results.split('\n')
 
         key_id_regx = re.compile(' ([0-9a-fA-f]{8,16})$')
-        symetric_regex = re.compile(' \d+ pass')
+        symmetric_regex = re.compile(' \d+ pass')
 
         for gpg_line in gpg_file_info_results:
             if not gpg_line.startswith('gpg:'):
@@ -373,10 +373,10 @@ class GpgUtils(object):
                 if key_id not in info.key_ids:
                     info.key_ids.append(key_id)
 
-            sym_match = symetric_regex.search(gpg_line)
+            sym_match = symmetric_regex.search(gpg_line)
             if sym_match:
-                # print("Symetric match")
-                info.is_symetric = True
+                # print("Symmetric match")
+                info.is_symmetric = True
 
         return info
 

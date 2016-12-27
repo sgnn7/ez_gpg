@@ -418,10 +418,10 @@ class EncryptWindow(GenericWindow):
         if is_pki_encryption:
             self._encrypt_pki(filenames, use_armor)
         else:
-            self._encrypt_symetric(filenames, use_armor)
+            self._encrypt_symmetric(filenames, use_armor)
 
 
-    def _encrypt_symetric(self, filenames, use_armor):
+    def _encrypt_symmetric(self, filenames, use_armor):
         password_field = self._password_field
         confirm_password_field = self._confirm_password_field
 
@@ -445,7 +445,7 @@ class EncryptWindow(GenericWindow):
             print(" - Finished. Stopping spinner.")
             self._encrypt_spinner.stop()
 
-        GpgUtils.encrypt_files_symetric(self, filenames, password,
+        GpgUtils.encrypt_files_symmetric(self, filenames, password,
                                         use_armor, callback=finished_encryption_cb)
 
         self.destroy()
@@ -581,8 +581,8 @@ class DecryptWindow(GenericWindow):
         GpgUtils.add_gpg_keys_to_combo_box(self._key_list, True)
 
         # TODO: Use a real ID
-        self._key_list.get_model().append(['symetric',
-                                           'Symetric encryption (password only)'])
+        self._key_list.get_model().append(['symmetric',
+                                           'Symmetric encryption (password only)'])
 
         # Prefetch the list
         self._gpg_keys = GpgUtils.get_gpg_keys(True)
@@ -616,8 +616,8 @@ class DecryptWindow(GenericWindow):
 
         info = self._encrypted_file_info
 
-        if info.is_symetric:
-            return model[iter][0] == 'symetric'
+        if info.is_symmetric:
+            return model[iter][0] == 'symmetric'
 
         matching_keys = list(filter(lambda x: x[0] == model[iter][0], self._gpg_keys))
         if len(matching_keys) == 0:
@@ -643,10 +643,10 @@ class DecryptWindow(GenericWindow):
         if not info:
             return
 
-        if info.is_symetric:
-            print("Symetric encryption")
+        if info.is_symmetric:
+            print("Symmetric encryption")
             self._key_filter.refilter()
-            self._key_list.set_active_id('symetric')
+            self._key_list.set_active_id('symmetric')
         else:
             print("Keys: ", info.key_ids)
             self._key_filter.refilter()
@@ -666,7 +666,7 @@ class DecryptWindow(GenericWindow):
         selected_key = self._key_list.get_active_id()
 
         if not selected_key or \
-           selected_key == 'symetric':
+           selected_key == 'symmetric':
             password_field.set_icon_from_stock(1, None)
         else:
             if GpgUtils.check_key_password(selected_key, password_field.get_text()):
