@@ -153,7 +153,6 @@
                                     <property name="vexpand">True</property>
                                     <property name="visibility">False</property>
                                     <property name="input_purpose">password</property>
-                                    <signal name="changed" handler="password_changed" swapped="no"/>
                                   </object>
                                   <packing>
                                     <property name="expand">False</property>
@@ -168,7 +167,6 @@
                                     <property name="vexpand">True</property>
                                     <property name="visibility">False</property>
                                     <property name="input_purpose">password</property>
-                                    <signal name="changed" handler="password_changed" swapped="no"/>
                                   </object>
                                   <packing>
                                     <property name="expand">False</property>

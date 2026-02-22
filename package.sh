@@ -13,8 +13,8 @@ fi
 echo "Package type: $package_type"
 
 # TODO: Use dirname/readlink instead of assuming we build from this dir
-echo "Checking setup.py validity..."
-./setup.py check
+echo "Building sdist to validate..."
+python -m build --sdist
 
 echo "Removing old package (if needed)..."
 rm -f ezgpg_*.$package_type

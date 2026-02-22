@@ -14,7 +14,7 @@ from gi.repository import Gtk
 from .config import Config
 from .ui_utils import UiUtils
 
-class GpgUtils(object):
+class GpgUtils:
     @staticmethod
     def _find_gpg_binary():
         """Locate the gpg binary, checking common macOS paths if needed."""
@@ -57,7 +57,7 @@ class GpgUtils(object):
             if len(key_name) > 60:
                 key_name = key_name[:60] + '...'
 
-            key_friendly_name = "%s |%s|" % (key_name, key_id[-Config.KEY_ID_SIZE:])
+            key_friendly_name = f"{key_name} |{key_id[-Config.KEY_ID_SIZE:]}|"
 
             subkeys = []
             for subkey in key['subkeys']:
@@ -96,7 +96,7 @@ class GpgUtils(object):
     @staticmethod
     def fetch_key(keyserver, key_id):
         gpg = GpgUtils.get_gpg_keyring()
-        print("Fetching '0x%s' from %s" % (key_id, keyserver))
+        print(f"Fetching '0x{key_id}' from {keyserver}")
         fetch_result = gpg.recv_keys(keyserver, key_id)
 
         if fetch_result.count == 0:
@@ -119,12 +119,12 @@ class GpgUtils(object):
             result = gpg.delete_keys(fetch_result.fingerprints)
             # XXX: This is the lamest API ever
             if not str(result) == 'ok':
-                print("Failed to delete keys (%s)" % result, fetch_result.fingerprints)
+                print(f"Failed to delete keys ({result})", fetch_result.fingerprints)
 
-            if GpgUtils.get_key_by_id(key_id) != None:
-                raise("Could not clean up rogue certs with suffix '0x%s'" % key_id)
+            if GpgUtils.get_key_by_id(key_id) is not None:
+                raise RuntimeError(f"Could not clean up rogue certs with suffix '0x{key_id}'")
 
-            raise RuntimeError("WARNING! Duplicate/rogue certs fetched due " + \
+            raise RuntimeError("WARNING! Duplicate/rogue certs fetched due "
                                "to colliding key ID (but we removed them so you're safe)!")
 
         print("Result:", fetch_result.fingerprints)
@@ -143,14 +143,14 @@ class GpgUtils(object):
             print("Secret key found. Deleting it")
             result = gpg.delete_keys(secret_key[4], True)
             if not str(result) == 'ok':
-                print("Failed to delete secret key (%s)" % result, secret_key)
+                print(f"Failed to delete secret key ({result})", secret_key)
                 return False
 
         print("Deleting public key")
         result = gpg.delete_keys(public_key[4])
 
         if not str(result) == 'ok':
-            print("Failed to delete public key (%s)" % result, public_key)
+            print(f"Failed to delete public key ({result})", public_key)
             return False
 
         return True
@@ -164,8 +164,8 @@ class GpgUtils(object):
             print("Invalid file!")
             return False
 
-        with open (filename, "rb") as keyfile:
-            key_data=keyfile.read()
+        with open(filename, "rb") as keyfile:
+            key_data = keyfile.read()
 
         return gpg.import_keys(key_data)
 
@@ -188,7 +188,7 @@ class GpgUtils(object):
     def encrypt_files_pki(window, filenames, key_ids, use_armor=True, callback=None):
         conversion_list = []
         for filename in filenames:
-            dest_filename = "%s.gpg" % filename
+            dest_filename = f"{filename}.gpg"
             conversion_list.append((filename, dest_filename))
 
         print(" - Armor:", use_armor)
@@ -196,7 +196,7 @@ class GpgUtils(object):
         gpg = GpgUtils.get_gpg_keyring()
 
         for filename, dest_filename in conversion_list:
-            print("Encrypting %s to %s" % (filename, dest_filename))
+            print(f"Encrypting {filename} to {dest_filename}")
 
             with open(filename, 'rb') as src_file:
                 status = gpg.encrypt_file(src_file,
@@ -204,9 +204,9 @@ class GpgUtils(object):
                                           always_trust=True,   # XXX: No key mgmt = no point
                                           armor=use_armor,     # XXX: This doesn't seem to work :(
                                           output=dest_filename)
-            print("Status: %s" % status)
+            print(f"Status: {status}")
 
-            print("Encrypted %s to %s" % (filename, dest_filename))
+            print(f"Encrypted {filename} to {dest_filename}")
 
         # Stop spinner when we return
         if callback:
@@ -220,7 +220,7 @@ class GpgUtils(object):
     def encrypt_files_symmetric(window, filenames, password, use_armor=True, callback=None):
         conversion_list = []
         for filename in filenames:
-            dest_filename = "%s.gpg" % filename
+            dest_filename = f"{filename}.gpg"
             conversion_list.append((filename, dest_filename))
 
         print(" - Armor:", use_armor)
@@ -228,7 +228,7 @@ class GpgUtils(object):
         gpg = GpgUtils.get_gpg_keyring()
 
         for filename, dest_filename in conversion_list:
-            print("Encrypting %s to %s" % (filename, dest_filename))
+            print(f"Encrypting {filename} to {dest_filename}")
 
             with open(filename, 'rb') as src_file:
                 status = gpg.encrypt_file(src_file,
@@ -239,9 +239,9 @@ class GpgUtils(object):
                                           # See https://github.com/isislovecruft/python-gnupg/issues/110
                                           armor=use_armor,     # XXX: This doesn't seem to work :(
                                           output=dest_filename)
-            print("Status: %s" % status)
+            print(f"Status: {status}")
 
-            print("Encrypted %s to %s" % (filename, dest_filename))
+            print(f"Encrypted {filename} to {dest_filename}")
 
         # Stop spinner when we return
         if callback:
@@ -256,9 +256,9 @@ class GpgUtils(object):
         print(" - Armor:", use_armor)
         # print(" - Password:", password)
 
-        signature_file = "%s.sig" % filename
+        signature_file = f"{filename}.sig"
 
-        print("Signing %s to %s with %s" % (filename, signature_file, key_id))
+        print(f"Signing {filename} to {signature_file} with {key_id}")
 
         gpg = GpgUtils.get_gpg_keyring()
         status = None
@@ -268,9 +268,9 @@ class GpgUtils(object):
                                    passphrase=password,
                                    detach=True,
                                    output=signature_file)
-        print("Status: %s" % status)
+        print(f"Status: {status}")
 
-        print("Signed %s to %s" % (filename, signature_file))
+        print(f"Signed {filename} to {signature_file}")
 
         # Stop spinner when we return
         if callback:
@@ -278,13 +278,13 @@ class GpgUtils(object):
 
         success = True
         dialog_title = "Completed!"
-        message_text = "Signature can be found at:\n%s" % signature_file
+        message_text = f"Signature can be found at:\n{signature_file}"
         message_type = Gtk.MessageType.INFO
 
         if not status:
             success = False
             dialog_title = "FAILED!"
-            message_text = "Unable to sign %s!" % filename
+            message_text = f"Unable to sign {filename}!"
             message_type = Gtk.MessageType.ERROR
 
         UiUtils.show_dialog(window,
@@ -300,7 +300,7 @@ class GpgUtils(object):
 
         decrypted_file = filename.rstrip('.gpg')
 
-        print("Decrypting %s to %s" % (filename, decrypted_file))
+        print(f"Decrypting {filename} to {decrypted_file}")
 
         gpg = GpgUtils.get_gpg_keyring()
         status = None
@@ -308,9 +308,9 @@ class GpgUtils(object):
             status = gpg.decrypt_file(src_file,
                                       passphrase=password,
                                       output=decrypted_file)
-        print("Status: %s" % status)
+        print(f"Status: {status}")
 
-        print("Decrypted %s to %s" % (filename, decrypted_file))
+        print(f"Decrypted {filename} to {decrypted_file}")
 
         # Stop spinner when we return
         if callback:
@@ -318,13 +318,13 @@ class GpgUtils(object):
 
         success = True
         dialog_title = "Completed!"
-        message_text = "Decrypted file can be found at:\n%s" % decrypted_file
+        message_text = f"Decrypted file can be found at:\n{decrypted_file}"
         message_type = Gtk.MessageType.INFO
 
         if not status:
             success = False
             dialog_title = "FAILED!"
-            message_text = "Unable to decrypt %s!" % filename
+            message_text = f"Unable to decrypt {filename}!"
             message_type = Gtk.MessageType.ERROR
 
         UiUtils.show_dialog(window,
@@ -338,7 +338,7 @@ class GpgUtils(object):
     #      type of encryption is on a file
     @staticmethod
     def get_encryped_file_info(window, filename):
-        class Info(object):
+        class Info:
             def __init__(self):
                 self.is_symmetric = False
                 self.key_ids = []
@@ -351,7 +351,7 @@ class GpgUtils(object):
         # Sanity check
         try:
             subprocess.check_output([gpg_binary, '--version'])
-        except:
+        except Exception:
             print("ERRROR! GPG not found!")
             UiUtils.show_dialog(window,
                                 "ERROR! GPG binary not found in path!",
@@ -360,7 +360,7 @@ class GpgUtils(object):
             window.destroy()
             return None
 
-        command = [gpg_binary, '--keyring=%s' % os.devnull,
+        command = [gpg_binary, f'--keyring={os.devnull}',
                    '--no-default-keyring',
                    '--list-only', '--verbose', filename]
 
@@ -368,7 +368,7 @@ class GpgUtils(object):
             gpg_file_info_results = subprocess.check_output(command,
                                                             stderr=subprocess.STDOUT,
                                                             universal_newlines=True)
-        except:
+        except Exception:
             print("Invalid file!")
             UiUtils.show_dialog(window,
                                 "ERROR! Not a GPG-encrypted file!",
@@ -434,9 +434,9 @@ class GpgUtils(object):
             print("Username level:", verification.username)
             username = verification.username
 
-        success_message = ["File %s verified!" % source_filename,
-                           "User: %s" % username,
-                           "Trust = %s" % verification.trust_text]
+        success_message = [f"File {source_filename} verified!",
+                           f"User: {username}",
+                           f"Trust = {verification.trust_text}"]
 
         dialog_title = "Verified!"
         message_text = '\n'.join(success_message)
@@ -444,15 +444,15 @@ class GpgUtils(object):
 
         if not verification.valid:
             dialog_title = "BAD SIGNATURE!"
-            message_text = "Signature for %s was verified and it was bad!" % source_filename
+            message_text = f"Signature for {source_filename} was verified and it was bad!"
             message_type = Gtk.MessageType.ERROR
         elif not verification.trust_level:
             dialog_title = "NOT VERIFIED!"
-            message_text = "Signature for %s CANNOT be verified!\nIt was either not included or was bad!" % source_filename
+            message_text = f"Signature for {source_filename} CANNOT be verified!\nIt was either not included or was bad!"
             message_type = Gtk.MessageType.ERROR
         elif verification.trust_level < verification.TRUST_MARGINAL:
             dialog_title = "NOT TRUSTED ENOGUH!"
-            message_text = "Signature for %s was verified but you don't trust it enough!" % source_filename
+            message_text = f"Signature for {source_filename} was verified but you don't trust it enough!"
             message_type = Gtk.MessageType.ERROR
 
         UiUtils.show_dialog(window,
