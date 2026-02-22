@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ezgpg"
+version = "0.2.5"
+description = "Simplified GPG UI"
+readme = "README.md"
+license = "LGPL-2.0-only"
+requires-python = ">=3.8"
+authors = [
+    { name = "Srdjan Grubor", email = "sgnn7@sgnn7.org" },
+]
+keywords = ["gpg", "gpg2", "pgp", "crypto", "cryptography"]
+classifiers = [
+    "Programming Language :: Python :: 3 :: Only",
+    "Development Status :: 3 - Alpha",
+    "Environment :: X11 Applications :: GTK",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Natural Language :: English",
+    "Topic :: Communications :: Email",
+    "Topic :: Office/Business",
+    "Topic :: Security :: Cryptography",
+    "Topic :: Security",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "python-gnupg",
+    "PyGObject",
+]
+
+[project.urls]
+Homepage = "https://github.com/sgnn7/ez_gpg"
+
+[project.gui-scripts]
+ezgpg = "ez_gpg.ui:EzGpg.launch"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "build",
+    "twine",
+]
+
+[tool.setuptools.packages.find]
+
+[tool.setuptools.package-data]
+"*" = ["*.ui", "*.md", "*.css"]

@@ -33,11 +33,13 @@ Personal take on what a usable GPG app should be like
  - Checks if your password is correct for selected key
 - Basic signing
 - Basic signature verification (detached signature)
+- Key creation (RSA/DSA, configurable key length)
 - Key import (armored)
 - Key deletion (armored)
 - Key export (armored and binary)
 - Keyserver fetch of key (with rogue cert checking)
-- Python packaging
+- macOS support (Apple Silicon and Intel)
+- Python packaging (PyPI via pyproject.toml)
 - Mnemonics (keyboard shortcuts)
 - fpm packaging
 
@@ -46,24 +48,59 @@ Personal take on what a usable GPG app should be like
 - Encryption/signing options
 - DnD
 - Key management
- - Key creation
  - Push to remote keyserver
  - Key signing
  - Key revocation
  - Key signature update from keyserver
 - PPA
+- <del>Key creation</del>
 - <del>Symmetric encryption</del>
 - <del>PyPI packaging that works</del>
 - <del>Debian packaging</del>
 
 ## Prerequisites
 
+### Linux (Debian/Ubuntu)
+
 - `python3-setuptools` (`sudo apt-get install python3-setuptools`)
 - `python3-gnupg` (`sudo apt-get install python3-gnupg`)
 
+### macOS
+
+Install system dependencies via [Homebrew](https://brew.sh):
+
+```bash
+brew install gnupg gtk+3 gobject-introspection pkg-config cairo pygobject3
+```
+
 ## Installation
 
-### Using fpm binary packages (recommended)
+### macOS (virtualenv)
+
+```bash
+# Clone repo
+git clone https://github.com/sgnn7/ez_gpg.git
+cd ez_gpg
+
+# Create and activate virtualenv
+python3 -m venv venv
+source venv/bin/activate
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Run
+./ezgpg
+```
+
+If `pip install PyGObject` fails, ensure pkg-config can find the required libraries:
+
+```bash
+export PKG_CONFIG_PATH="$(brew --prefix)/lib/pkgconfig:$(brew --prefix)/share/pkgconfig:$PKG_CONFIG_PATH"
+pip install PyGObject
+```
+
+### Linux: Using fpm binary packages (recommended)
 
 - Clone repo
 - Install Ruby (`sudo apt-get install ruby`)
@@ -72,10 +109,10 @@ Personal take on what a usable GPG app should be like
 - Build package with `./package.sh deb` or `./package.sh rpm`
 - Install package (`sudo dpkg -i ezgpg_*.deb`)
 
-### Using setuputils
+### Using pip
 
 - Clone repo
-- `sudo ./setup.py install`
+- `pip install .`
 
 ## Running
 
@@ -83,3 +120,13 @@ Personal take on what a usable GPG app should be like
 - If running from repo:
  - `cd <repo path>`
  - `./ezgpg`
+
+## Development
+
+```bash
+# Install dev dependencies
+pip install -e ".[dev]"
+
+# Run tests
+python -m pytest tests/ -v
+```

@@ -8,7 +8,7 @@ gi.require_version('Gtk', '3.0')
 
 from gi.repository import Gtk
 
-class UiUtils(object):
+class UiUtils:
     @staticmethod
     def show_unimplemented_message_box(window):
         UiUtils.show_dialog(window,
@@ -47,9 +47,9 @@ class UiUtils(object):
         dialog = Gtk.FileChooserDialog(title,
                                        window,
                                        Gtk.FileChooserAction.OPEN,
-                                       (Gtk.STOCK_CANCEL,
+                                       ("_Cancel",
                                         Gtk.ResponseType.CANCEL,
-                                        Gtk.STOCK_OPEN,
+                                        "_Open",
                                         Gtk.ResponseType.OK))
 
         dialog.set_default_response(Gtk.ResponseType.OK)
@@ -81,9 +81,9 @@ class UiUtils(object):
         dialog = Gtk.FileChooserDialog(title,
                                        window,
                                        Gtk.FileChooserAction.SAVE,
-                                       (Gtk.STOCK_CANCEL,
+                                       ("_Cancel",
                                         Gtk.ResponseType.CANCEL,
-                                        Gtk.STOCK_SAVE,
+                                        "_Save",
                                         Gtk.ResponseType.ACCEPT))
 
         dialog.set_default_response(Gtk.ResponseType.OK)
@@ -109,7 +109,7 @@ class UiUtils(object):
 
                 filename += suffix
 
-            print("Filename chosen as:", filename)
+            print(f"Filename chosen as: {filename}")
 
         dialog.destroy()
         return filename, armor
@@ -130,7 +130,7 @@ class UiUtils(object):
         input_entry = Gtk.Entry()
         input_entry.set_size_request(350,0)
 
-        if max_length != None:
+        if max_length is not None:
             print("Setting max length to", max_length)
             input_entry.set_max_length(max_length)
 
@@ -171,7 +171,7 @@ class UiUtils(object):
 
         return response == Gtk.ResponseType.YES
 
-class error_wrapper(object):
+class error_wrapper:
     """Error handler decorator"""
     def __init__(self, func):
         self.func = func
@@ -182,9 +182,9 @@ class error_wrapper(object):
 
         msg = Gtk.MessageDialog(message_type=Gtk.MessageType.ERROR,
                                 buttons=Gtk.ButtonsType.CLOSE,
-                                message_format="Type: %s" % error.__class__.__name__)
+                                message_format=f"Type: {error.__class__.__name__}")
         msg.set_title("Unhandled Error")
-        msg.format_secondary_text("Description: %s" % error.__str__())
+        msg.format_secondary_text(f"Description: {error}")
 
         msg.run()
         msg.destroy()

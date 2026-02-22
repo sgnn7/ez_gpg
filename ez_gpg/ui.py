@@ -1,8 +1,21 @@
 # vim:ff=unix ts=4 sw=4 expandtab
 
-import gi
 import os
-import pkg_resources
+import subprocess
+import sys
+
+# On macOS, ensure GI_TYPELIB_PATH includes Homebrew typelibs
+if sys.platform == 'darwin' and 'GI_TYPELIB_PATH' not in os.environ:
+    try:
+        prefix = subprocess.check_output(['brew', '--prefix'],
+                                         text=True).strip()
+        typelib_dir = os.path.join(prefix, 'lib', 'girepository-1.0')
+        if os.path.isdir(typelib_dir):
+            os.environ['GI_TYPELIB_PATH'] = typelib_dir
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        pass
+
+import gi
 import re
 
 gi.require_version('Gtk', '3.0')
@@ -14,10 +27,13 @@ from .config import Config
 from .gpg_utils import GpgUtils
 from .ui_utils import error_wrapper, UiUtils
 
+_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+
+
 class GenericWindow(Gtk.Window):
     def __init__(self, app, window_name, title,
                  glade_file=None):
-        window_title = "EZ GPG - %s" % title
+        window_title = f"EZ GPG - {title}"
 
         self._app = app
 
@@ -30,7 +46,7 @@ class GenericWindow(Gtk.Window):
         # TODO: We need our own icon
         try:
             self.set_icon_name("seahorse")
-        except:
+        except Exception:
             pass
 
         self.connect("delete-event", self._close_window)
@@ -38,7 +54,7 @@ class GenericWindow(Gtk.Window):
 
         self._mapped_actions = {}
         for action, callback in self._get_actions():
-            # print("Mapping %s to %s" % (action, callback))
+            # print(f"Mapping {action} to {callback}")
             simple_action = Gio.SimpleAction.new(action, None)
             simple_action.connect('activate', error_wrapper(callback))
             app.add_action(simple_action)
@@ -64,7 +80,7 @@ class GenericWindow(Gtk.Window):
         return []
 
     def _show_error_message(self, message):
-        print("ERROR! %s" % message)
+        print(f"ERROR! {message}")
         UiUtils.show_dialog(self,
                             message)
 
@@ -77,8 +93,7 @@ class GenericWindow(Gtk.Window):
     def _build_ui(self, glade_file):
         self._builder = Gtk.Builder()
 
-        ui_filename = pkg_resources.resource_filename('ez_gpg',
-                                                      'data/%s.ui' % glade_file)
+        ui_filename = os.path.join(_DATA_DIR, f'{glade_file}.ui')
         self._builder.add_from_file(ui_filename)
 
 
@@ -215,7 +230,11 @@ class KeyManagementWindow(GenericWindow):
 
     def create_keys(self, action=None, param=None):
         print("Create Keys pressed...")
-        UiUtils.show_unimplemented_message_box(self)
+        child_window = CreateKeyWindow(self._app, on_created=self._refresh_key_list)
+        child_window.set_modal(True)
+        child_window.set_transient_for(self)
+        child_window.present()
+        self._app.add_window(child_window)
 
     def edit_keys(self, action=None, param=None):
         print("Edit Keys pressed...")
@@ -262,7 +281,7 @@ class KeyManagementWindow(GenericWindow):
 
         GpgUtils.export_key(key_id, filename, armor)
 
-        print("Key exported as %s..." % filename)
+        print(f"Key exported as {filename}...")
 
     def upload_keys(self, action=None, param=None):
         print("Upload Keys pressed...")
@@ -282,10 +301,10 @@ class KeyManagementWindow(GenericWindow):
 
         # TODO: Check that the string is hex
 
-        print("Key ID '0x%s' requested" % key_id)
+        print(f"Key ID '0x{key_id}' requested")
 
         if len(key_id) not in [ 8, 16, 40 ]:
-            self._show_error_message("Key ID (%s) is not the correct length!" % key_id)
+            self._show_error_message(f"Key ID ({key_id}) is not the correct length!")
             return
 
         if len(key_id) == 8:
@@ -310,7 +329,7 @@ class KeyManagementWindow(GenericWindow):
         try:
             fingerprint = GpgUtils.fetch_key(keyserver, key_id)
             if not fingerprint:
-                self._show_error_message("ERROR! Could not fetch key with ID '0x%s'" % key_id)
+                self._show_error_message(f"ERROR! Could not fetch key with ID '0x{key_id}'")
                 return
         except Exception as e:
             self._show_error_message(str(e))
@@ -318,14 +337,14 @@ class KeyManagementWindow(GenericWindow):
 
         print("Fetched:", fingerprint)
         UiUtils.show_dialog(self,
-                            "Successful import of '0x%s':!\n" % key_id +
-                            "Fingerprint: " + fingerprint,
+                            f"Successful import of '0x{key_id}':!\n"
+                            f"Fingerprint: {fingerprint}",
                             title="Fetch success",
                             message_type=Gtk.MessageType.INFO)
 
     def delete_keys(self, action=None, param=None):
         print("Delete Keys pressed...")
-        if not self.confirm_action("Are you sure you want to delete key ids: %s" % self._selected_keys):
+        if not self.confirm_action(f"Are you sure you want to delete key ids: {self._selected_keys}"):
             print("Action cancelled!")
             return
 
@@ -339,6 +358,109 @@ class KeyManagementWindow(GenericWindow):
                 self._refresh_key_list()
 
         print("Done deleting keys")
+
+class CreateKeyWindow(GenericWindow):
+    def __init__(self, app, on_created=None):
+        super().__init__(app, 'create_key_window', "Create Key")
+
+        self._on_created = on_created
+
+        builder = self.get_builder()
+
+        self._name_field = builder.get_object('ent_name')
+        self._email_field = builder.get_object('ent_email')
+        self._key_type_combo = builder.get_object('cmb_key_type')
+        self._key_length_combo = builder.get_object('cmb_key_length')
+        self._passphrase_field = builder.get_object('ent_passphrase')
+        self._confirm_passphrase_field = builder.get_object('ent_confirm_passphrase')
+        self._create_spinner = builder.get_object('spn_create')
+        self._create_button = builder.get_object('btn_do_create')
+
+        # Populate key type options
+        for key_type in ['RSA', 'DSA']:
+            self._key_type_combo.append_text(key_type)
+        self._key_type_combo.set_active(0)
+
+        # Populate key length options
+        for key_length in ['2048', '3072', '4096']:
+            self._key_length_combo.append_text(key_length)
+        self._key_length_combo.set_active(2)  # Default to 4096
+
+        self._passphrase_field.connect('changed', self._check_passphrase_matching)
+        self._confirm_passphrase_field.connect('changed', self._check_passphrase_matching)
+
+        self.add(builder.get_object('create_key_window_vbox'))
+
+    def _get_actions(self):
+        return [('create_key_window.do_create', self.do_create)]
+
+    def _check_passphrase_matching(self, widget):
+        passphrase = self._passphrase_field.get_text()
+        confirmed = self._confirm_passphrase_field.get_text()
+
+        if not passphrase or not confirmed:
+            self._confirm_passphrase_field.set_icon_from_icon_name(1, None)
+        elif passphrase == confirmed:
+            self._confirm_passphrase_field.set_icon_from_icon_name(1, None)
+        else:
+            self._confirm_passphrase_field.set_icon_from_icon_name(1, "dialog-error")
+            self._confirm_passphrase_field.set_icon_tooltip_text(1, "Passphrases do not match!")
+
+    def do_create(self, action=None, param=None):
+        print("Clicked Create Key button")
+
+        name = self._name_field.get_text().strip()
+        email = self._email_field.get_text().strip()
+        passphrase = self._passphrase_field.get_text()
+        confirmed = self._confirm_passphrase_field.get_text()
+        key_type = self._key_type_combo.get_active_text()
+        key_length = int(self._key_length_combo.get_active_text())
+
+        if not name:
+            self._show_error_message("Name is required!")
+            return
+
+        if not email:
+            self._show_error_message("Email is required!")
+            return
+
+        if not passphrase:
+            self._show_error_message("Passphrase is required!")
+            return
+
+        if passphrase != confirmed:
+            self._show_error_message("Passphrases do not match!")
+            return
+
+        print(f" - Name: {name}")
+        print(f" - Email: {email}")
+        print(f" - Key Type: {key_type}")
+        print(f" - Key Length: {key_length}")
+
+        print(" - Locking UI and showing spinner.")
+        self._create_button.set_sensitive(False)
+        self._create_spinner.start()
+
+        fingerprint = GpgUtils.create_key(name, email, passphrase, key_type, key_length)
+
+        self._create_spinner.stop()
+
+        if fingerprint:
+            print(f" - Key created: {fingerprint}")
+            UiUtils.show_dialog(self,
+                                f"Key created successfully!\n\nFingerprint:\n{fingerprint}",
+                                title="Key Created",
+                                message_type=Gtk.MessageType.INFO)
+
+            if self._on_created:
+                self._on_created()
+
+            self.destroy()
+        else:
+            print(" - Key creation failed!")
+            self._create_button.set_sensitive(True)
+            self._show_error_message("Failed to create key!")
+
 
 class EncryptWindow(GenericWindow):
     def __init__(self, app):
@@ -371,7 +493,8 @@ class EncryptWindow(GenericWindow):
 
         self._key_list_box.show_all()
 
-        builder.connect_signals({'password_changed': self._check_password_matching})
+        self._password_field.connect('changed', self._check_password_matching)
+        self._confirm_password_field.connect('changed', self._check_password_matching)
 
         self.add(builder.get_object('encrypt_window_vbox'))
 
@@ -387,13 +510,13 @@ class EncryptWindow(GenericWindow):
         password = password_field.get_text()
         confirmed_password = confirm_password_field.get_text()
 
-        if password == None or confirmed_password == None:
-            confirm_password_field.set_icon_from_stock(1, None)
+        if password is None or confirmed_password is None:
+            confirm_password_field.set_icon_from_icon_name(1, None)
         else:
             if password == confirmed_password:
-                confirm_password_field.set_icon_from_stock(1, None)
+                confirm_password_field.set_icon_from_icon_name(1, None)
             else:
-                confirm_password_field.set_icon_from_stock(1, Gtk.STOCK_DIALOG_ERROR)
+                confirm_password_field.set_icon_from_icon_name(1, "dialog-error")
                 confirm_password_field.set_icon_tooltip_text(1, "Passwords do not match!")
 
     def do_encrypt(self, action=None, param=None):
@@ -410,7 +533,7 @@ class EncryptWindow(GenericWindow):
             return
 
         use_armor = self._armor_output_check_box.get_active()
-        print("Armor output: %s" % use_armor)
+        print(f"Armor output: {use_armor}")
 
         is_pki_encryption = self._encryption_type.get_current_page() == 0
         print(" Using PKI:", is_pki_encryption)
@@ -428,7 +551,7 @@ class EncryptWindow(GenericWindow):
         password = password_field.get_text()
         confirmed_password = confirm_password_field.get_text()
 
-        if password == None or confirmed_password == None:
+        if password is None or confirmed_password is None:
             self._show_error_message("No password set!")
             return
         elif password != confirmed_password:
@@ -460,7 +583,7 @@ class EncryptWindow(GenericWindow):
             if key_item.get_active():
                 key_id = key_item.get_name()
 
-                print("   - Selected: %s" % key_id)
+                print(f"   - Selected: {key_id}")
                 selected_keys.append(key_id)
 
         # TODO: Make this event driven vs post verification
@@ -505,8 +628,8 @@ class SignWindow(GenericWindow):
         #      disable this for now
         self._armor_output_check_box.set_visible(False)
 
-        builder.connect_signals({'password_changed': self._check_key_password,
-                                 'key_changed': self._check_key_password})
+        self._key_list.connect('changed', self._check_key_password)
+        self._password_field.connect('changed', self._check_key_password)
 
         self.add(builder.get_object('sign_window_vbox'))
 
@@ -520,9 +643,9 @@ class SignWindow(GenericWindow):
         selected_key = self._key_list.get_active_id()
         if selected_key:
             if GpgUtils.check_key_password(selected_key, password_field.get_text()):
-                password_field.set_icon_from_stock(1, None)
+                password_field.set_icon_from_icon_name(1, None)
             else:
-                password_field.set_icon_from_stock(1, Gtk.STOCK_DIALOG_ERROR)
+                password_field.set_icon_from_icon_name(1, "dialog-error")
                 password_field.set_icon_tooltip_text(1, "Invalid password for the selected key!")
 
     def do_sign(self, action=None, param=None):
@@ -545,7 +668,7 @@ class SignWindow(GenericWindow):
         print(" - Key Id:", selected_key)
 
         use_armor = self._armor_output_check_box.get_active()
-        print(" - Armor output: %s" % use_armor)
+        print(f" - Armor output: {use_armor}")
 
         # Disable encrypt button if we're in the middle of encryption
         print(" - Locking UI and showing spinner.")
@@ -598,9 +721,9 @@ class DecryptWindow(GenericWindow):
         self._decrypt_spinner = builder.get_object('spn_decrypt')
         self._decrypt_button = builder.get_object('btn_do_decrypt')
 
-        builder.connect_signals({'password_changed': self._check_key_password,
-                                 'key_changed': self._check_key_password,
-                                 'file_chosen': self._update_key_list})
+        self._source_file.connect('file-set', self._update_key_list)
+        self._key_list.connect('changed', self._check_key_password)
+        self._password_field.connect('changed', self._check_key_password)
 
         self.add(builder.get_object('decrypt_window_vbox'))
 
@@ -623,11 +746,15 @@ class DecryptWindow(GenericWindow):
         if len(matching_keys) == 0:
             return False
 
-        key_id, key_name, key_friendly_name, subkeys, _ = matching_keys[0]
-        for subkey in subkeys:
-            # print("Comparing %s in %s" % (subkey, info.key_ids))
+        key_id, key_name, key_friendly_name, subkeys, fingerprint = matching_keys[0]
+
+        # Check primary key ID, fingerprint, and all subkeys against
+        # the encryption key IDs extracted from the file
+        all_key_ids = [key_id, fingerprint] + subkeys
+        for candidate in all_key_ids:
+            # print(f"Comparing {candidate} in {info.key_ids}")
             for encryption_key in info.key_ids:
-                if subkey.endswith(encryption_key):
+                if candidate.endswith(encryption_key) or encryption_key.endswith(candidate):
                     print("Found! Matching key:", key_id, key_name)
                     info.matching_key = key_id
                     return True
@@ -667,12 +794,12 @@ class DecryptWindow(GenericWindow):
 
         if not selected_key or \
            selected_key == 'symmetric':
-            password_field.set_icon_from_stock(1, None)
+            password_field.set_icon_from_icon_name(1, None)
         else:
             if GpgUtils.check_key_password(selected_key, password_field.get_text()):
-                password_field.set_icon_from_stock(1, None)
+                password_field.set_icon_from_icon_name(1, None)
             else:
-                password_field.set_icon_from_stock(1, Gtk.STOCK_DIALOG_ERROR)
+                password_field.set_icon_from_icon_name(1, "dialog-error")
                 password_field.set_icon_tooltip_text(1, "Invalid password for the selected key!")
 
     def do_decrypt(self, action=None, param=None):
@@ -769,25 +896,17 @@ class EzGpg(Gtk.Application):
         print("Starting up...")
         Gtk.Application.do_startup(self)
 
-        menu = Gio.Menu()
-
         for action, is_menu_item, callback in self._actions:
-            if is_menu_item:
-                menu.append(action.capitalize(), "app.%s" % action)
-
             simple_action = Gio.SimpleAction.new(action, None)
             simple_action.connect('activate', callback)
             self.add_action(simple_action)
-
-        self.set_app_menu(menu)
 
     def do_activate(self):
         print("Activating...")
         if not self._window:
             current_dir = os.path.dirname(os.path.abspath(__file__))
             css_provider = Gtk.CssProvider()
-            css_provider.load_from_path(pkg_resources.resource_filename('ez_gpg',
-                                                                        'data/application.css'))
+            css_provider.load_from_path(os.path.join(_DATA_DIR, 'application.css'))
 
             screen = Gdk.Screen.get_default()
             style_context = Gtk.StyleContext()

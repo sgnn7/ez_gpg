@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk+" version="3.12"/>
+  <object class="GtkBox" id="create_key_window_vbox">
+    <property name="width_request">400</property>
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="hexpand">True</property>
+    <property name="orientation">vertical</property>
+    <property name="spacing">5</property>
+    <child>
+      <object class="GtkBox" id="name_row">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="spacing">7</property>
+        <child>
+          <object class="GtkLabel" id="lbl_name">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="width_request">100</property>
+            <property name="xalign">0</property>
+            <property name="label" translatable="yes">Name:</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkEntry" id="ent_name">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="hexpand">True</property>
+            <property name="placeholder_text" translatable="yes">Full Name</property>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">0</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkBox" id="email_row">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="spacing">7</property>
+        <child>
+          <object class="GtkLabel" id="lbl_email">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="width_request">100</property>
+            <property name="xalign">0</property>
+            <property name="label" translatable="yes">Email:</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkEntry" id="ent_email">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="hexpand">True</property>
+            <property name="placeholder_text" translatable="yes">email@example.com</property>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">1</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkBox" id="key_type_row">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="spacing">7</property>
+        <child>
+          <object class="GtkLabel" id="lbl_key_type">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="width_request">100</property>
+            <property name="xalign">0</property>
+            <property name="label" translatable="yes">Key Type:</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkComboBoxText" id="cmb_key_type">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="hexpand">True</property>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">2</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkBox" id="key_length_row">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="spacing">7</property>
+        <child>
+          <object class="GtkLabel" id="lbl_key_length">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="width_request">100</property>
+            <property name="xalign">0</property>
+            <property name="label" translatable="yes">Key Length:</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkComboBoxText" id="cmb_key_length">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="hexpand">True</property>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">3</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkEntry" id="ent_passphrase">
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+        <property name="visibility">False</property>
+        <property name="invisible_char">&#x25CF;</property>
+        <property name="placeholder_text" translatable="yes">Passphrase</property>
+        <property name="input_purpose">password</property>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">4</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkEntry" id="ent_confirm_passphrase">
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+        <property name="visibility">False</property>
+        <property name="invisible_char">&#x25CF;</property>
+        <property name="placeholder_text" translatable="yes">Confirm Passphrase</property>
+        <property name="input_purpose">password</property>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">5</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkBox" id="bottom_button_row">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="margin_top">7</property>
+        <child>
+          <object class="GtkSpinner" id="spn_create">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="halign">end</property>
+            <property name="hexpand">True</property>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="btn_do_create">
+            <property name="label" translatable="yes">_Create</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="halign">end</property>
+            <property name="valign">center</property>
+            <property name="margin_top">6</property>
+            <property name="margin_bottom">6</property>
+            <property name="hexpand">False</property>
+            <property name="vexpand">False</property>
+            <property name="action_name">app.create_key_window.do_create</property>
+            <property name="use_underline">True</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="padding">10</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">6</property>
+      </packing>
+    </child>
+  </object>
+</interface>
