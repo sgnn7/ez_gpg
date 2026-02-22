@@ -19,7 +19,7 @@ setup(
         ]
     },
 
-    install_requires = ['python-gnupg'],
+    install_requires = ['python-gnupg', 'PyGObject'],
 
     package_data = {
         '': ['*.ui', '*.md', '*.css'],
@@ -38,6 +38,7 @@ setup(
         "Intended Audience :: End Users/Desktop",
         "License :: OSI Approved :: GNU Lesser General Public License v2 (LGPLv2)",
         "Operating System :: POSIX :: Linux",
+        "Operating System :: MacOS :: MacOS X",
         "Natural Language :: English",
         "Topic :: Communications :: Email",
         "Topic :: Office/Business",

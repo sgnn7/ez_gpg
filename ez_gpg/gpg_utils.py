@@ -2,10 +2,11 @@
 
 import gi
 import gnupg  # Requires python3-gnupg
+import os
 import re
+import shutil
 import subprocess
-
-from os.path import expanduser
+import sys
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
@@ -15,9 +16,30 @@ from .ui_utils import UiUtils
 
 class GpgUtils(object):
     @staticmethod
+    def _find_gpg_binary():
+        """Locate the gpg binary, checking common macOS paths if needed."""
+        for binary_name in ('gpg', 'gpg2'):
+            path = shutil.which(binary_name)
+            if path:
+                return path
+
+        if sys.platform == 'darwin':
+            macos_paths = [
+                '/opt/homebrew/bin/gpg',       # Apple Silicon Homebrew
+                '/opt/homebrew/bin/gpg2',
+                '/usr/local/bin/gpg',          # Intel Homebrew
+                '/usr/local/bin/gpg2',
+                '/usr/local/MacGPG2/bin/gpg2', # GPG Suite
+            ]
+            for path in macos_paths:
+                if os.path.isfile(path) and os.access(path, os.X_OK):
+                    return path
+
+        return 'gpg'
+
+    @staticmethod
     def get_gpg_keyring():
-        # TODO: Get this working
-        return gnupg.GPG()
+        return gnupg.GPG(gpgbinary=GpgUtils._find_gpg_binary())
 
     # TODO: Make the keys be an object instead of tuple
     @staticmethod
@@ -324,9 +346,11 @@ class GpgUtils(object):
 
         info = Info()
 
+        gpg_binary = GpgUtils._find_gpg_binary()
+
         # Sanity check
         try:
-            subprocess.check_output(['gpg', '--version'])
+            subprocess.check_output([gpg_binary, '--version'])
         except:
             print("ERRROR! GPG not found!")
             UiUtils.show_dialog(window,
@@ -336,7 +360,8 @@ class GpgUtils(object):
             window.destroy()
             return None
 
-        command = ['gpg', '--keyring=/dev/null', '--no-default-keyring',
+        command = [gpg_binary, '--keyring=%s' % os.devnull,
+                   '--no-default-keyring',
                    '--list-only', '--verbose', filename]
 
         try:
@@ -357,7 +382,7 @@ class GpgUtils(object):
         gpg_file_info_results = gpg_file_info_results.split('\n')
 
         key_id_regx = re.compile(' ([0-9a-fA-f]{8,16})$')
-        symmetric_regex = re.compile(' \d+ pass')
+        symmetric_regex = re.compile(r' \d+ pass')
 
         for gpg_line in gpg_file_info_results:
             if not gpg_line.startswith('gpg:'):

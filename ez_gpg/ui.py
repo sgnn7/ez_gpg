@@ -1,8 +1,21 @@
 # vim:ff=unix ts=4 sw=4 expandtab
 
-import gi
 import os
-import pkg_resources
+import subprocess
+import sys
+
+# On macOS, ensure GI_TYPELIB_PATH includes Homebrew typelibs
+if sys.platform == 'darwin' and 'GI_TYPELIB_PATH' not in os.environ:
+    try:
+        prefix = subprocess.check_output(['brew', '--prefix'],
+                                         text=True).strip()
+        typelib_dir = os.path.join(prefix, 'lib', 'girepository-1.0')
+        if os.path.isdir(typelib_dir):
+            os.environ['GI_TYPELIB_PATH'] = typelib_dir
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        pass
+
+import gi
 import re
 
 gi.require_version('Gtk', '3.0')
@@ -13,6 +26,9 @@ from gi.repository import Gdk, Gio, GLib, GObject, Gtk
 from .config import Config
 from .gpg_utils import GpgUtils
 from .ui_utils import error_wrapper, UiUtils
+
+_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+
 
 class GenericWindow(Gtk.Window):
     def __init__(self, app, window_name, title,
@@ -77,8 +93,7 @@ class GenericWindow(Gtk.Window):
     def _build_ui(self, glade_file):
         self._builder = Gtk.Builder()
 
-        ui_filename = pkg_resources.resource_filename('ez_gpg',
-                                                      'data/%s.ui' % glade_file)
+        ui_filename = os.path.join(_DATA_DIR, '%s.ui' % glade_file)
         self._builder.add_from_file(ui_filename)
 
 
@@ -786,8 +801,7 @@ class EzGpg(Gtk.Application):
         if not self._window:
             current_dir = os.path.dirname(os.path.abspath(__file__))
             css_provider = Gtk.CssProvider()
-            css_provider.load_from_path(pkg_resources.resource_filename('ez_gpg',
-                                                                        'data/application.css'))
+            css_provider.load_from_path(os.path.join(_DATA_DIR, 'application.css'))
 
             screen = Gdk.Screen.get_default()
             style_context = Gtk.StyleContext()

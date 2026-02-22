@@ -58,12 +58,47 @@ Personal take on what a usable GPG app should be like
 
 ## Prerequisites
 
+### Linux (Debian/Ubuntu)
+
 - `python3-setuptools` (`sudo apt-get install python3-setuptools`)
 - `python3-gnupg` (`sudo apt-get install python3-gnupg`)
 
+### macOS
+
+Install system dependencies via [Homebrew](https://brew.sh):
+
+```bash
+brew install gnupg gtk+3 gobject-introspection pkg-config cairo pygobject3
+```
+
 ## Installation
 
-### Using fpm binary packages (recommended)
+### macOS (virtualenv)
+
+```bash
+# Clone repo
+git clone https://github.com/sgnn7/ez_gpg.git
+cd ez_gpg
+
+# Create and activate virtualenv
+python3 -m venv venv
+source venv/bin/activate
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Run
+./ezgpg
+```
+
+If `pip install PyGObject` fails, ensure pkg-config can find the required libraries:
+
+```bash
+export PKG_CONFIG_PATH="$(brew --prefix)/lib/pkgconfig:$(brew --prefix)/share/pkgconfig:$PKG_CONFIG_PATH"
+pip install PyGObject
+```
+
+### Linux: Using fpm binary packages (recommended)
 
 - Clone repo
 - Install Ruby (`sudo apt-get install ruby`)
@@ -72,10 +107,10 @@ Personal take on what a usable GPG app should be like
 - Build package with `./package.sh deb` or `./package.sh rpm`
 - Install package (`sudo dpkg -i ezgpg_*.deb`)
 
-### Using setuputils
+### Using setuptools
 
 - Clone repo
-- `sudo ./setup.py install`
+- `pip install .`
 
 ## Running
 

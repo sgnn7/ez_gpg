@@ -17,3 +17,10 @@ pip-*.json
 *.tar
 
 local_test_data/
+
+# Virtualenv
+venv/
+.venv/
+
+# Claude
+.claude/settings.local.json
