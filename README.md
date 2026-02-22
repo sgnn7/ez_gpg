@@ -33,11 +33,13 @@ Personal take on what a usable GPG app should be like
  - Checks if your password is correct for selected key
 - Basic signing
 - Basic signature verification (detached signature)
+- Key creation (RSA/DSA, configurable key length)
 - Key import (armored)
 - Key deletion (armored)
 - Key export (armored and binary)
 - Keyserver fetch of key (with rogue cert checking)
-- Python packaging
+- macOS support (Apple Silicon and Intel)
+- Python packaging (PyPI via pyproject.toml)
 - Mnemonics (keyboard shortcuts)
 - fpm packaging
 
@@ -46,12 +48,12 @@ Personal take on what a usable GPG app should be like
 - Encryption/signing options
 - DnD
 - Key management
- - Key creation
  - Push to remote keyserver
  - Key signing
  - Key revocation
  - Key signature update from keyserver
 - PPA
+- <del>Key creation</del>
 - <del>Symmetric encryption</del>
 - <del>PyPI packaging that works</del>
 - <del>Debian packaging</del>
@@ -107,7 +109,7 @@ pip install PyGObject
 - Build package with `./package.sh deb` or `./package.sh rpm`
 - Install package (`sudo dpkg -i ezgpg_*.deb`)
 
-### Using setuptools
+### Using pip
 
 - Clone repo
 - `pip install .`
@@ -118,3 +120,13 @@ pip install PyGObject
 - If running from repo:
  - `cd <repo path>`
  - `./ezgpg`
+
+## Development
+
+```bash
+# Install dev dependencies
+pip install -e ".[dev]"
+
+# Run tests
+python -m pytest tests/ -v
+```
