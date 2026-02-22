@@ -84,7 +84,66 @@ class TestGetGpgKeyring(unittest.TestCase):
     @patch.object(GpgUtils, '_find_gpg_binary', return_value='/usr/local/bin/gpg')
     def test_passes_binary_to_gnupg(self, mock_find, mock_gpg_class):
         GpgUtils.get_gpg_keyring()
-        mock_gpg_class.assert_called_once_with(gpgbinary='/usr/local/bin/gpg')
+        mock_gpg_class.assert_called_once_with(gpgbinary='/usr/local/bin/gpg',
+                                                     options=['--pinentry-mode', 'loopback'])
+
+
+class TestCreateKey(unittest.TestCase):
+    @patch('ez_gpg.gpg_utils.gnupg.GPG')
+    @patch.object(GpgUtils, '_find_gpg_binary', return_value='/usr/bin/gpg')
+    def test_create_key_returns_fingerprint_on_success(self, mock_find, mock_gpg_class):
+        mock_gpg = MagicMock()
+        mock_gpg_class.return_value = mock_gpg
+        mock_gpg.gen_key_input.return_value = 'input_data'
+        mock_key = MagicMock()
+        mock_key.fingerprint = 'ABCD1234EFGH5678'
+        mock_gpg.gen_key.return_value = mock_key
+
+        result = GpgUtils.create_key('Test User', 'test@example.com', 'secret')
+        self.assertEqual(result, 'ABCD1234EFGH5678')
+
+        mock_gpg.gen_key_input.assert_called_once_with(
+            key_type='RSA',
+            key_length=4096,
+            name_real='Test User',
+            name_email='test@example.com',
+            passphrase='secret',
+        )
+        mock_gpg.gen_key.assert_called_once_with('input_data')
+
+    @patch('ez_gpg.gpg_utils.gnupg.GPG')
+    @patch.object(GpgUtils, '_find_gpg_binary', return_value='/usr/bin/gpg')
+    def test_create_key_returns_none_on_failure(self, mock_find, mock_gpg_class):
+        mock_gpg = MagicMock()
+        mock_gpg_class.return_value = mock_gpg
+        mock_gpg.gen_key_input.return_value = 'input_data'
+        mock_key = MagicMock()
+        mock_key.fingerprint = ''
+        mock_gpg.gen_key.return_value = mock_key
+
+        result = GpgUtils.create_key('Test User', 'test@example.com', 'secret')
+        self.assertIsNone(result)
+
+    @patch('ez_gpg.gpg_utils.gnupg.GPG')
+    @patch.object(GpgUtils, '_find_gpg_binary', return_value='/usr/bin/gpg')
+    def test_create_key_passes_custom_key_type_and_length(self, mock_find, mock_gpg_class):
+        mock_gpg = MagicMock()
+        mock_gpg_class.return_value = mock_gpg
+        mock_gpg.gen_key_input.return_value = 'input_data'
+        mock_key = MagicMock()
+        mock_key.fingerprint = 'FINGERPRINT123'
+        mock_gpg.gen_key.return_value = mock_key
+
+        result = GpgUtils.create_key('User', 'u@e.com', 'pass', key_type='DSA', key_length=2048)
+        self.assertEqual(result, 'FINGERPRINT123')
+
+        mock_gpg.gen_key_input.assert_called_once_with(
+            key_type='DSA',
+            key_length=2048,
+            name_real='User',
+            name_email='u@e.com',
+            passphrase='pass',
+        )
 
 
 if __name__ == '__main__':

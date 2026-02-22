@@ -230,7 +230,11 @@ class KeyManagementWindow(GenericWindow):
 
     def create_keys(self, action=None, param=None):
         print("Create Keys pressed...")
-        UiUtils.show_unimplemented_message_box(self)
+        child_window = CreateKeyWindow(self._app, on_created=self._refresh_key_list)
+        child_window.set_modal(True)
+        child_window.set_transient_for(self)
+        child_window.present()
+        self._app.add_window(child_window)
 
     def edit_keys(self, action=None, param=None):
         print("Edit Keys pressed...")
@@ -354,6 +358,109 @@ class KeyManagementWindow(GenericWindow):
                 self._refresh_key_list()
 
         print("Done deleting keys")
+
+class CreateKeyWindow(GenericWindow):
+    def __init__(self, app, on_created=None):
+        super().__init__(app, 'create_key_window', "Create Key")
+
+        self._on_created = on_created
+
+        builder = self.get_builder()
+
+        self._name_field = builder.get_object('ent_name')
+        self._email_field = builder.get_object('ent_email')
+        self._key_type_combo = builder.get_object('cmb_key_type')
+        self._key_length_combo = builder.get_object('cmb_key_length')
+        self._passphrase_field = builder.get_object('ent_passphrase')
+        self._confirm_passphrase_field = builder.get_object('ent_confirm_passphrase')
+        self._create_spinner = builder.get_object('spn_create')
+        self._create_button = builder.get_object('btn_do_create')
+
+        # Populate key type options
+        for key_type in ['RSA', 'DSA']:
+            self._key_type_combo.append_text(key_type)
+        self._key_type_combo.set_active(0)
+
+        # Populate key length options
+        for key_length in ['2048', '3072', '4096']:
+            self._key_length_combo.append_text(key_length)
+        self._key_length_combo.set_active(2)  # Default to 4096
+
+        self._passphrase_field.connect('changed', self._check_passphrase_matching)
+        self._confirm_passphrase_field.connect('changed', self._check_passphrase_matching)
+
+        self.add(builder.get_object('create_key_window_vbox'))
+
+    def _get_actions(self):
+        return [('create_key_window.do_create', self.do_create)]
+
+    def _check_passphrase_matching(self, widget):
+        passphrase = self._passphrase_field.get_text()
+        confirmed = self._confirm_passphrase_field.get_text()
+
+        if not passphrase or not confirmed:
+            self._confirm_passphrase_field.set_icon_from_icon_name(1, None)
+        elif passphrase == confirmed:
+            self._confirm_passphrase_field.set_icon_from_icon_name(1, None)
+        else:
+            self._confirm_passphrase_field.set_icon_from_icon_name(1, "dialog-error")
+            self._confirm_passphrase_field.set_icon_tooltip_text(1, "Passphrases do not match!")
+
+    def do_create(self, action=None, param=None):
+        print("Clicked Create Key button")
+
+        name = self._name_field.get_text().strip()
+        email = self._email_field.get_text().strip()
+        passphrase = self._passphrase_field.get_text()
+        confirmed = self._confirm_passphrase_field.get_text()
+        key_type = self._key_type_combo.get_active_text()
+        key_length = int(self._key_length_combo.get_active_text())
+
+        if not name:
+            self._show_error_message("Name is required!")
+            return
+
+        if not email:
+            self._show_error_message("Email is required!")
+            return
+
+        if not passphrase:
+            self._show_error_message("Passphrase is required!")
+            return
+
+        if passphrase != confirmed:
+            self._show_error_message("Passphrases do not match!")
+            return
+
+        print(f" - Name: {name}")
+        print(f" - Email: {email}")
+        print(f" - Key Type: {key_type}")
+        print(f" - Key Length: {key_length}")
+
+        print(" - Locking UI and showing spinner.")
+        self._create_button.set_sensitive(False)
+        self._create_spinner.start()
+
+        fingerprint = GpgUtils.create_key(name, email, passphrase, key_type, key_length)
+
+        self._create_spinner.stop()
+
+        if fingerprint:
+            print(f" - Key created: {fingerprint}")
+            UiUtils.show_dialog(self,
+                                f"Key created successfully!\n\nFingerprint:\n{fingerprint}",
+                                title="Key Created",
+                                message_type=Gtk.MessageType.INFO)
+
+            if self._on_created:
+                self._on_created()
+
+            self.destroy()
+        else:
+            print(" - Key creation failed!")
+            self._create_button.set_sensitive(True)
+            self._show_error_message("Failed to create key!")
+
 
 class EncryptWindow(GenericWindow):
     def __init__(self, app):
@@ -639,11 +746,15 @@ class DecryptWindow(GenericWindow):
         if len(matching_keys) == 0:
             return False
 
-        key_id, key_name, key_friendly_name, subkeys, _ = matching_keys[0]
-        for subkey in subkeys:
-            # print(f"Comparing {subkey} in {info.key_ids}")
+        key_id, key_name, key_friendly_name, subkeys, fingerprint = matching_keys[0]
+
+        # Check primary key ID, fingerprint, and all subkeys against
+        # the encryption key IDs extracted from the file
+        all_key_ids = [key_id, fingerprint] + subkeys
+        for candidate in all_key_ids:
+            # print(f"Comparing {candidate} in {info.key_ids}")
             for encryption_key in info.key_ids:
-                if subkey.endswith(encryption_key):
+                if candidate.endswith(encryption_key) or encryption_key.endswith(candidate):
                     print("Found! Matching key:", key_id, key_name)
                     info.matching_key = key_id
                     return True

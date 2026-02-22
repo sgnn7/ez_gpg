@@ -1,0 +1,3 @@
+[allowlist]
+  description = "Mock GPG fingerprint in test file"
+  paths = ['''tests/test_gpg_utils\.py''']

@@ -39,7 +39,8 @@ class GpgUtils:
 
     @staticmethod
     def get_gpg_keyring():
-        return gnupg.GPG(gpgbinary=GpgUtils._find_gpg_binary())
+        return gnupg.GPG(gpgbinary=GpgUtils._find_gpg_binary(),
+                         options=['--pinentry-mode', 'loopback'])
 
     # TODO: Make the keys be an object instead of tuple
     @staticmethod
@@ -461,6 +462,21 @@ class GpgUtils:
                             message_type=message_type)
 
         return verification.valid
+
+    @staticmethod
+    def create_key(name, email, passphrase, key_type='RSA', key_length=4096):
+        gpg = GpgUtils.get_gpg_keyring()
+        input_data = gpg.gen_key_input(
+            key_type=key_type,
+            key_length=key_length,
+            name_real=name,
+            name_email=email,
+            passphrase=passphrase,
+        )
+        key = gpg.gen_key(input_data)
+        if not key.fingerprint:
+            return None
+        return key.fingerprint
 
     @staticmethod
     def check_key_password(key_id, password):
