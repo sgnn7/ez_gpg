@@ -3,13 +3,6 @@ import sys
 import unittest
 from unittest.mock import patch, MagicMock
 
-# Mock gi and GTK before importing gpg_utils so tests run without GTK
-gi_mock = MagicMock()
-gi_mock.require_version = MagicMock()
-sys.modules['gi'] = gi_mock
-sys.modules['gi.repository'] = MagicMock()
-sys.modules['gi.repository.Gtk'] = MagicMock()
-
 from ez_gpg.gpg_utils import GpgUtils
 
 

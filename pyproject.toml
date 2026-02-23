@@ -16,7 +16,6 @@ keywords = ["gpg", "gpg2", "pgp", "crypto", "cryptography"]
 classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Development Status :: 3 - Alpha",
-    "Environment :: X11 Applications :: GTK",
     "Intended Audience :: End Users/Desktop",
     "Operating System :: POSIX :: Linux",
     "Operating System :: MacOS :: MacOS X",
@@ -29,7 +28,7 @@ classifiers = [
 ]
 dependencies = [
     "python-gnupg",
-    "PyGObject",
+    "kivy",
 ]
 
 [project.urls]
@@ -48,4 +47,4 @@ dev = [
 [tool.setuptools.packages.find]
 
 [tool.setuptools.package-data]
-"*" = ["*.ui", "*.md", "*.css"]
+"*" = ["*.md"]

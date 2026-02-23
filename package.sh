@@ -23,11 +23,7 @@ echo "Building package..."
 fpm -s python \
     -t $package_type \
     -d python3 \
-    -d gnupg \
-    -d python3-gi \
-    -d gobject-introspection \
-    -d libgtk-3-0 \
-    -d gir1.2-gtk-3.0 \
+    -d python3-tk \
     -n ezgpg \
     -m "Srdjan Grubor <sgnn7@sgnn7.org>" \
     --deb-no-default-config-files \
@@ -35,4 +31,4 @@ fpm -s python \
     --python-pip pip3 \
     --python-easyinstall easy_install3 \
     --python-bin python3 \
-    ./setup.py
+    ./pyproject.toml

@@ -1,220 +1,644 @@
 # vim:ff=unix ts=4 sw=4 expandtab
 
 import os
-import subprocess
-import sys
-
-# On macOS, ensure GI_TYPELIB_PATH includes Homebrew typelibs
-if sys.platform == 'darwin' and 'GI_TYPELIB_PATH' not in os.environ:
-    try:
-        prefix = subprocess.check_output(['brew', '--prefix'],
-                                         text=True).strip()
-        typelib_dir = os.path.join(prefix, 'lib', 'girepository-1.0')
-        if os.path.isdir(typelib_dir):
-            os.environ['GI_TYPELIB_PATH'] = typelib_dir
-    except (FileNotFoundError, subprocess.CalledProcessError):
-        pass
-
-import gi
 import re
 
-gi.require_version('Gtk', '3.0')
-gi.require_version('Gdk', '3.0')
+from kivy.config import Config as KivyConfig
+KivyConfig.set('input', 'mouse', 'mouse,multitouch_on_demand')
 
-from gi.repository import Gdk, Gio, GLib, GObject, Gtk
-
+from kivy.app import App
+from kivy.core.window import Window
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.button import Button
+from kivy.uix.label import Label
+from kivy.uix.textinput import TextInput
+from kivy.uix.checkbox import CheckBox
+from kivy.uix.spinner import Spinner as KivySpinner
+from kivy.uix.tabbedpanel import TabbedPanel, TabbedPanelItem
+from kivy.uix.popup import Popup
+from kivy.uix.scrollview import ScrollView
+from kivy.uix.filechooser import FileChooserListView
+from kivy.uix.screenmanager import ScreenManager, Screen, NoTransition
 from .config import Config
 from .gpg_utils import GpgUtils
-from .ui_utils import error_wrapper, UiUtils
-
-_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+from .ui_utils import UiUtils
 
 
-class GenericWindow(Gtk.Window):
-    def __init__(self, app, window_name, title,
-                 glade_file=None):
-        window_title = f"EZ GPG - {title}"
+class BaseScreen(Screen):
+    """Base screen with common functionality."""
+    _window_size = (700, 500)
+    _back_target = 'main'
 
-        self._app = app
-
-        Gtk.Window.__init__(self, title=window_title, application=app)
-
-        self.set_border_width(20)
-        self.set_name(window_name)
-        self.set_position(Gtk.WindowPosition.CENTER)
-
-        # TODO: We need our own icon
-        try:
-            self.set_icon_name("seahorse")
-        except Exception:
-            pass
-
-        self.connect("delete-event", self._close_window)
-        self.connect("key-press-event", self._on_key_pressed)
-
-        self._mapped_actions = {}
-        for action, callback in self._get_actions():
-            # print(f"Mapping {action} to {callback}")
-            simple_action = Gio.SimpleAction.new(action, None)
-            simple_action.connect('activate', error_wrapper(callback))
-            app.add_action(simple_action)
-
-            self._mapped_actions[action] = simple_action
-
-        if not glade_file:
-            glade_file = window_name
-
-        self._build_ui(glade_file)
-
-    def _on_key_pressed(self, widget, event):
-        # TODO: Maybe use accelerators?
-        if event.keyval == Gdk.KEY_Escape:
-            self._close_window()
-
-        return False
-
-    def _close_window(self, *args, **kwargs):
-        self.destroy()
-
-    def _get_actions(self):
-        return []
+    def _go_back(self, instance=None):
+        self.manager.transition = NoTransition()
+        self.manager.current = self._back_target
 
     def _show_error_message(self, message):
         print(f"ERROR! {message}")
-        UiUtils.show_dialog(self,
-                            message)
+        UiUtils.show_dialog(None, message)
 
-    def confirm_action(self, message):
-        return UiUtils.confirm_dialog(self, message)
+    def on_enter(self):
+        Window.size = self._window_size
 
-    def get_builder(self):
-        return self._builder
-
-    def _build_ui(self, glade_file):
-        self._builder = Gtk.Builder()
-
-        ui_filename = os.path.join(_DATA_DIR, f'{glade_file}.ui')
-        self._builder.add_from_file(ui_filename)
+    def on_pre_enter(self):
+        pass
 
 
-class MainWindow(GenericWindow):
-    def __init__(self, app):
-        super().__init__(app, 'main_window', "Home")
+class MainScreen(BaseScreen):
+    _window_size = (280, 100)
 
-        self.add(self.get_builder().get_object('main_window_vbox'))
+    def __init__(self, **kwargs):
+        super().__init__(name='main', **kwargs)
 
-    def _get_actions(self):
-        return [('show_encrypt_ui', self.show_encrypt_ui),
-                ('show_decrypt_ui', self.show_decrypt_ui),
-                ('show_sign_ui',    self.show_sign_ui),
-                ('show_verify_ui',  self.show_verify_ui),
-                ('key_management',  self.show_key_management_ui),
-                ]
+        layout = BoxLayout(orientation='vertical', padding=15, spacing=10)
 
-    def _show_window(self, clazz):
-        child_window = clazz(self._app)
-        child_window.set_modal(True)
-        child_window.set_transient_for(self)
+        # 2x2 grid: Encrypt/Decrypt, Sign/Verify
+        grid = GridLayout(cols=2, spacing=10, size_hint_y=None)
+        for text, target in [
+            ('Encrypt', 'encrypt'),
+            ('Decrypt', 'decrypt'),
+            ('Sign', 'sign'),
+            ('Verify', 'verify'),
+        ]:
+            btn = Button(text=text, font_size='14sp')
+            btn.screen_target = target
+            btn.bind(on_release=self._navigate)
+            grid.add_widget(btn)
+        layout.add_widget(grid)
 
-        child_window.present()
+        # Key Management spanning full width
+        km_btn = Button(text='Key Management', size_hint_y=None, height=40,
+                        font_size='14sp')
+        km_btn.screen_target = 'key_management'
+        km_btn.bind(on_release=self._navigate)
+        layout.add_widget(km_btn)
 
-        self._app.add_window(child_window)
+        self.add_widget(layout)
 
-    def show_encrypt_ui(self, action=None, param=None):
-        print("Clicked Encrypt button")
-        self._show_window(EncryptWindow)
+    def on_enter(self):
+        super().on_enter()
+        App.get_running_app().title = 'EZ GPG \u2013 Home'
 
-    def show_decrypt_ui(self, action=None, param=None):
-        print("Clicked Decrypt button")
-        self._show_window(DecryptWindow)
-
-    def show_sign_ui(self, action=None, param=None):
-        print("Clicked Sign button")
-        self._show_window(SignWindow)
-
-    def show_verify_ui(self, action=None, param=None):
-        print("Clicked Verify button")
-        self._show_window(VerifyWindow)
-
-    def show_key_management_ui(self, action=None, param=None):
-        print("Clicked Key Management button")
-        self._show_window(KeyManagementWindow)
+    def _navigate(self, instance):
+        print(f"Clicked {instance.text} button")
+        self.manager.transition = NoTransition()
+        self.manager.current = instance.screen_target
 
 
-class KeyManagementWindow(GenericWindow):
-    def __init__(self, app):
-        super().__init__(app, 'key_management', "Key Management")
+class EncryptScreen(BaseScreen):
+    _window_size = (680, 600)
 
-        builder = self.get_builder()
+    def __init__(self, **kwargs):
+        super().__init__(name='encrypt', **kwargs)
 
-        # XXX: Keeping state is bad but we can fix this later
-        self._selected_keys = []
+        layout = BoxLayout(orientation='vertical', padding=10, spacing=6)
 
-        self._key_list_box = builder.get_object('lst_keys')
-        self._refresh_key_list()
+        # Embedded file chooser (top portion)
+        self._file_chooser = FileChooserListView(
+            multiselect=True,
+            path=os.path.expanduser('~'),
+            size_hint_y=0.55)
+        layout.add_widget(self._file_chooser)
 
-        self._keyserver_combo = builder.get_object('cmb_keyserver')
+        # Tabbed panel: Public Key / Symetric Key
+        self._tab_panel = TabbedPanel(do_default_tab=False, tab_width=150,
+                                      size_hint_y=0.38)
 
-        # Populate keyserver list
-        keyserver_list = Gtk.ListStore(str, str)
-        for keyserver in Config.get_keyservers():
-            keyserver_list.append([keyserver, keyserver])
+        # PKI Tab
+        pki_tab = TabbedPanelItem(text='Public Key')
+        self._key_scroll = ScrollView()
+        self._key_list_layout = BoxLayout(orientation='vertical',
+                                          size_hint_y=None, spacing=4, padding=4)
+        self._key_list_layout.bind(
+            minimum_height=self._key_list_layout.setter('height'))
+        self._key_scroll.add_widget(self._key_list_layout)
+        pki_tab.add_widget(self._key_scroll)
+        self._tab_panel.add_widget(pki_tab)
 
-        cell = Gtk.CellRendererText()
-        self._keyserver_combo.pack_start(cell, True)
-        self._keyserver_combo.add_attribute(cell, 'text', 1)
+        # Symmetric Tab
+        sym_tab = TabbedPanelItem(text='Symetric Key')
+        sym_layout = BoxLayout(orientation='vertical', padding=10, spacing=8)
 
-        self._keyserver_combo.set_model(keyserver_list)
-        self._keyserver_combo.set_id_column(0)
-        self._keyserver_combo.set_entry_text_column(1)
+        pw_row = BoxLayout(size_hint_y=None, height=36, spacing=10)
+        pw_row.add_widget(Label(text='Password:', size_hint_x=None, width=130,
+                                halign='right', valign='middle',
+                                text_size=(130, 36)))
+        self._password_field = TextInput(password=True, multiline=False)
+        pw_row.add_widget(self._password_field)
+        sym_layout.add_widget(pw_row)
 
-        # Set default keyserver
-        self._keyserver_combo.set_active(0)
+        cpw_row = BoxLayout(size_hint_y=None, height=36, spacing=10)
+        cpw_row.add_widget(Label(text='Confirm Password:', size_hint_x=None,
+                                 width=130, halign='right', valign='middle',
+                                 text_size=(130, 36)))
+        self._confirm_password_field = TextInput(password=True, multiline=False)
+        cpw_row.add_widget(self._confirm_password_field)
+        sym_layout.add_widget(cpw_row)
 
-        self._edit_key_button = builder.get_object('btn_edit')
-        self._upload_key_button = builder.get_object('btn_upload')
-        self._export_key_button = builder.get_object('btn_export')
-        self._delete_key_button = builder.get_object('btn_delete')
+        sym_layout.add_widget(BoxLayout())  # spacer
+        sym_tab.add_widget(sym_layout)
+        self._tab_panel.add_widget(sym_tab)
 
-        self.add(builder.get_object('main_vbox'))
+        layout.add_widget(self._tab_panel)
 
-        self._update_button_state()
+        # Bottom row with Encrypt button right-aligned
+        btn_row = BoxLayout(size_hint_y=None, height=36)
+        btn_row.add_widget(BoxLayout())  # left spacer
+        self._encrypt_btn = Button(text='Encrypt', size_hint_x=None, width=100,
+                                   font_size='14sp')
+        self._encrypt_btn.bind(on_release=self._do_encrypt)
+        btn_row.add_widget(self._encrypt_btn)
+        layout.add_widget(btn_row)
 
-    def _refresh_key_list(self):
-        for child in self._key_list_box.get_children():
-            self._key_list_box.remove(child)
-            # child.destroy()
-            # TODO: Disconnect notify::active signal
+        self.add_widget(layout)
+
+    def on_enter(self):
+        super().on_enter()
+        App.get_running_app().title = 'EZ GPG - Encrypt'
+
+    def on_pre_enter(self):
+        self._password_field.text = ''
+        self._confirm_password_field.text = ''
+        self._encrypt_btn.disabled = False
+        self._file_chooser.selection = []
+        self._populate_key_list()
+
+    def _populate_key_list(self):
+        self._key_list_layout.clear_widgets()
+        self._key_checkboxes = []
 
         for key in GpgUtils.get_gpg_keys():
             key_id = key[0]
             key_friendly_name = key[2]
 
-            key_row = Gtk.CheckButton(GObject.markup_escape_text(key_friendly_name))
-            key_row.get_children()[0].set_use_markup(True)
-            key_row.set_name(key_id)
+            row = BoxLayout(size_hint_y=None, height=28)
+            cb = CheckBox(size_hint_x=None, width=28)
+            cb.key_id = key_id
+            row.add_widget(cb)
+            row.add_widget(Label(text=key_friendly_name, halign='left',
+                                 text_size=(500, None), font_size='13sp'))
 
-            key_row.connect('notify::active', self._key_changed_active_state)
+            self._key_checkboxes.append(cb)
+            self._key_list_layout.add_widget(row)
 
-            self._key_list_box.add(key_row)
+    def _do_encrypt(self, instance):
+        print("Clicked Encrypt Content button")
 
-        self._key_list_box.show_all()
+        filenames = self._file_chooser.selection
+        if not filenames:
+            self._show_error_message("File not selected!")
+            return
 
-    def _get_actions(self):
-        return [('key_management_window.do_create_key',  self.create_keys),
-                ('key_management_window.do_import_keys', self.import_keys),
-                ('key_management_window.do_edit_keys',   self.edit_keys),
-                ('key_management_window.do_fetch_keys',  self.fetch_keys),
-                ('key_management_window.do_upload_keys', self.upload_keys),
-                ('key_management_window.do_export_keys', self.export_keys),
-                ('key_management_window.do_delete_keys', self.delete_keys),
-                ]
+        current_tab = self._tab_panel.current_tab
+        is_pki = current_tab.text.startswith('Public')
 
-    def _key_changed_active_state(self, widget, params):
-        key_id = widget.get_name()
-        self._selected_keys = [key for key in self._selected_keys if key != key_id]
-        if widget.get_active():
-            self._selected_keys.append(key_id)
+        if is_pki:
+            self._encrypt_pki(filenames)
+        else:
+            self._encrypt_symmetric(filenames)
+
+    def _encrypt_pki(self, filenames):
+        selected_keys = [cb.key_id for cb in self._key_checkboxes if cb.active]
+
+        if not selected_keys:
+            self._show_error_message("No key selected!")
+            return
+
+        self._encrypt_btn.disabled = True
+        GpgUtils.encrypt_files_pki(None, filenames, selected_keys, True)
+        self._go_back()
+
+    def _encrypt_symmetric(self, filenames):
+        password = self._password_field.text
+        confirmed = self._confirm_password_field.text
+
+        if not password:
+            self._show_error_message("No password set!")
+            return
+
+        if password != confirmed:
+            self._show_error_message("Passwords do not match!")
+            return
+
+        self._encrypt_btn.disabled = True
+        GpgUtils.encrypt_files_symmetric(None, filenames, password, True)
+        self._go_back()
+
+
+class DecryptScreen(BaseScreen):
+    _window_size = (460, 220)
+
+    def __init__(self, **kwargs):
+        super().__init__(name='decrypt', **kwargs)
+
+        self._source_file = None
+        self._gpg_keys = []
+        self._key_map = {}
+
+        layout = BoxLayout(orientation='vertical', padding=15, spacing=8)
+
+        # File chooser button (filename display + browse icon)
+        file_row = BoxLayout(size_hint_y=None, height=36, spacing=2)
+        self._file_display = TextInput(text='', readonly=True, multiline=False,
+                                       hint_text='(no file selected)',
+                                       font_size='13sp')
+        file_row.add_widget(self._file_display)
+        browse_btn = Button(text='\u2026', size_hint_x=None, width=36,
+                            font_size='16sp')
+        browse_btn.bind(on_release=self._select_file)
+        file_row.add_widget(browse_btn)
+        layout.add_widget(file_row)
+
+        # Key dropdown (full width)
+        self._key_spinner = KivySpinner(text='', values=[],
+                                        size_hint_y=None, height=36,
+                                        font_size='13sp')
+        layout.add_widget(self._key_spinner)
+
+        # Password field (full width)
+        self._password_field = TextInput(password=True, multiline=False,
+                                         size_hint_y=None, height=36,
+                                         font_size='13sp')
+        layout.add_widget(self._password_field)
+
+        # Bottom row with Decrypt button right-aligned
+        btn_row = BoxLayout(size_hint_y=None, height=36)
+        btn_row.add_widget(BoxLayout())  # left spacer
+        self._decrypt_btn = Button(text='Decrypt', size_hint_x=None, width=100,
+                                   font_size='14sp')
+        self._decrypt_btn.bind(on_release=self._do_decrypt)
+        btn_row.add_widget(self._decrypt_btn)
+        layout.add_widget(btn_row)
+
+        self.add_widget(layout)
+
+    def on_enter(self):
+        super().on_enter()
+        App.get_running_app().title = 'EZ GPG \u2013 Decrypt file'
+
+    def on_pre_enter(self):
+        self._source_file = None
+        self._file_display.text = ''
+        self._password_field.text = ''
+        self._decrypt_btn.disabled = False
+        self._populate_keys()
+
+    def _populate_keys(self):
+        self._gpg_keys = GpgUtils.get_gpg_keys(True)
+        self._key_map = {}
+
+        values = []
+        for key in self._gpg_keys:
+            key_id, key_name, key_friendly_name, subkeys, fingerprint = key
+            self._key_map[key_friendly_name] = key_id
+            values.append(key_friendly_name)
+
+        values.append('Symmetric encryption (password only)')
+        self._key_map['Symmetric encryption (password only)'] = 'symmetric'
+
+        self._key_spinner.values = values
+        self._key_spinner.text = values[0] if values else ''
+
+    def _select_file(self, instance):
+        filename = UiUtils.get_filename(title="Select file to decrypt")
+        if filename:
+            self._source_file = filename
+            self._file_display.text = os.path.basename(filename)
+            self._update_key_list()
+
+    def _update_key_list(self):
+        if not self._source_file:
+            return
+
+        info = GpgUtils.get_encryped_file_info(None, self._source_file)
+        if not info:
+            return
+
+        if info.is_symmetric:
+            print("Symmetric encryption")
+            self._key_spinner.text = 'Symmetric encryption (password only)'
+        else:
+            print("Keys: ", info.key_ids)
+            for key in self._gpg_keys:
+                key_id, key_name, key_friendly_name, subkeys, fingerprint = key
+                all_key_ids = [key_id, fingerprint] + subkeys
+                for candidate in all_key_ids:
+                    for enc_key in info.key_ids:
+                        if candidate.endswith(enc_key) or enc_key.endswith(candidate):
+                            print("Found! Matching key:", key_id, key_name)
+                            self._key_spinner.text = key_friendly_name
+                            return
+
+            UiUtils.show_dialog(None,
+                                "ERROR! You do not have a key that can decrypt this file!",
+                                title="Missing decryption key")
+
+    def _do_decrypt(self, instance):
+        print("Clicked Decrypt button")
+
+        if not self._source_file:
+            self._show_error_message("File not selected!")
+            return
+
+        self._decrypt_btn.disabled = True
+
+        success = GpgUtils.decrypt_file(None, self._source_file,
+                                        self._password_field.text)
+
+        if success:
+            self._go_back()
+        else:
+            self._decrypt_btn.disabled = False
+
+
+class SignScreen(BaseScreen):
+    _window_size = (500, 220)
+
+    def __init__(self, **kwargs):
+        super().__init__(name='sign', **kwargs)
+
+        self._source_file = None
+        self._key_map = {}
+
+        layout = BoxLayout(orientation='vertical', padding=15, spacing=8)
+
+        # File chooser button
+        file_row = BoxLayout(size_hint_y=None, height=36, spacing=2)
+        self._file_display = TextInput(text='', readonly=True, multiline=False,
+                                       hint_text='(no file selected)',
+                                       font_size='13sp')
+        file_row.add_widget(self._file_display)
+        browse_btn = Button(text='\u2026', size_hint_x=None, width=36,
+                            font_size='16sp')
+        browse_btn.bind(on_release=self._select_file)
+        file_row.add_widget(browse_btn)
+        layout.add_widget(file_row)
+
+        # Key dropdown
+        self._key_spinner = KivySpinner(text='', values=[],
+                                        size_hint_y=None, height=36,
+                                        font_size='13sp')
+        layout.add_widget(self._key_spinner)
+
+        # Password field
+        self._password_field = TextInput(password=True, multiline=False,
+                                         size_hint_y=None, height=36,
+                                         font_size='13sp')
+        layout.add_widget(self._password_field)
+
+        # Bottom row with Sign button right-aligned
+        btn_row = BoxLayout(size_hint_y=None, height=36)
+        btn_row.add_widget(BoxLayout())
+        self._sign_btn = Button(text='Sign', size_hint_x=None, width=100,
+                                font_size='14sp')
+        self._sign_btn.bind(on_release=self._do_sign)
+        btn_row.add_widget(self._sign_btn)
+        layout.add_widget(btn_row)
+
+        self.add_widget(layout)
+
+    def on_enter(self):
+        super().on_enter()
+        App.get_running_app().title = 'EZ GPG \u2013 Sign file'
+
+    def on_pre_enter(self):
+        self._source_file = None
+        self._file_display.text = ''
+        self._password_field.text = ''
+        self._sign_btn.disabled = False
+        self._populate_keys()
+
+    def _populate_keys(self):
+        self._key_map = {}
+        values = []
+        for key in GpgUtils.get_gpg_keys(True):
+            key_id, key_name, key_friendly_name, subkeys, fingerprint = key
+            self._key_map[key_friendly_name] = key_id
+            values.append(key_friendly_name)
+
+        self._key_spinner.values = values
+        self._key_spinner.text = values[0] if values else ''
+
+    def _select_file(self, instance):
+        filename = UiUtils.get_filename(title="Select file to sign")
+        if filename:
+            self._source_file = filename
+            self._file_display.text = os.path.basename(filename)
+
+    def _do_sign(self, instance):
+        print("Clicked Sign button")
+
+        if not self._source_file:
+            self._show_error_message("File not selected!")
+            return
+
+        selected_text = self._key_spinner.text
+        selected_key = self._key_map.get(selected_text)
+
+        if not selected_key:
+            self._show_error_message("No key selected!")
+            return
+
+        print(" - Key Id:", selected_key)
+
+        self._sign_btn.disabled = True
+
+        success = GpgUtils.sign_file(None, self._source_file, selected_key,
+                                     self._password_field.text)
+
+        if success:
+            self._go_back()
+        else:
+            self._sign_btn.disabled = False
+
+
+class VerifyScreen(BaseScreen):
+    _window_size = (460, 200)
+
+    def __init__(self, **kwargs):
+        super().__init__(name='verify', **kwargs)
+
+        self._source_file = None
+        self._signature_file = None
+
+        layout = BoxLayout(orientation='vertical', padding=15, spacing=10)
+
+        # Data File row
+        data_row = BoxLayout(size_hint_y=None, height=36, spacing=8)
+        data_row.add_widget(Label(text='Data File:', size_hint_x=None, width=80,
+                                  halign='right', valign='middle',
+                                  text_size=(80, 36), font_size='13sp'))
+        self._file_display = TextInput(text='', readonly=True, multiline=False,
+                                       hint_text='(none)', font_size='13sp')
+        data_row.add_widget(self._file_display)
+        data_browse = Button(text='\u2026', size_hint_x=None, width=36,
+                             font_size='16sp')
+        data_browse.bind(on_release=self._select_file)
+        data_row.add_widget(data_browse)
+        layout.add_widget(data_row)
+
+        # Signature row
+        sig_row = BoxLayout(size_hint_y=None, height=36, spacing=8)
+        sig_row.add_widget(Label(text='Signature:', size_hint_x=None, width=80,
+                                 halign='right', valign='middle',
+                                 text_size=(80, 36), font_size='13sp'))
+        self._sig_display = TextInput(text='', readonly=True, multiline=False,
+                                      hint_text='(none)', font_size='13sp')
+        sig_row.add_widget(self._sig_display)
+        sig_browse = Button(text='\u2026', size_hint_x=None, width=36,
+                            font_size='16sp')
+        sig_browse.bind(on_release=self._select_signature)
+        sig_row.add_widget(sig_browse)
+        layout.add_widget(sig_row)
+
+        # Spacer
+        layout.add_widget(BoxLayout())
+
+        # Verify button centered
+        btn_row = BoxLayout(size_hint_y=None, height=36)
+        btn_row.add_widget(BoxLayout())
+        self._verify_btn = Button(text='Verify', size_hint_x=None, width=100,
+                                  font_size='14sp')
+        self._verify_btn.bind(on_release=self._do_verify)
+        btn_row.add_widget(self._verify_btn)
+        btn_row.add_widget(BoxLayout())
+        layout.add_widget(btn_row)
+
+        self.add_widget(layout)
+
+    def on_enter(self):
+        super().on_enter()
+        App.get_running_app().title = 'EZ GPG \u2013 Verify Signature'
+
+    def on_pre_enter(self):
+        self._source_file = None
+        self._signature_file = None
+        self._file_display.text = ''
+        self._sig_display.text = ''
+        self._verify_btn.disabled = False
+
+    def _select_file(self, instance):
+        filename = UiUtils.get_filename(title="Select data file")
+        if filename:
+            self._source_file = filename
+            self._file_display.text = os.path.basename(filename)
+
+    def _select_signature(self, instance):
+        filename = UiUtils.get_filename(title="Select signature file")
+        if filename:
+            self._signature_file = filename
+            self._sig_display.text = os.path.basename(filename)
+
+    def _do_verify(self, instance):
+        print("Clicked Verify Signature button")
+
+        if not self._source_file:
+            self._show_error_message("File not selected!")
+            return
+
+        self._verify_btn.disabled = True
+
+        success = GpgUtils.verify_file(None, self._source_file, self._signature_file)
+
+        if success:
+            self._go_back()
+        else:
+            self._verify_btn.disabled = False
+
+
+class KeyManagementScreen(BaseScreen):
+    _window_size = (600, 400)
+
+    def __init__(self, **kwargs):
+        super().__init__(name='key_management', **kwargs)
+
+        self._selected_keys = []
+
+        layout = BoxLayout(orientation='vertical', padding=10, spacing=6)
+
+        # Toolbar matching screenshot: + Add, Import, Edit, Fetch, Upload, Export, Delete
+        toolbar = BoxLayout(size_hint_y=None, height=36, spacing=4)
+
+        self._create_btn = Button(text='+ Add', font_size='13sp')
+        self._create_btn.bind(on_release=self._create_keys)
+        toolbar.add_widget(self._create_btn)
+
+        self._import_btn = Button(text='Import', font_size='13sp')
+        self._import_btn.bind(on_release=self._import_keys)
+        toolbar.add_widget(self._import_btn)
+
+        self._edit_btn = Button(text='Edit', font_size='13sp', disabled=True)
+        self._edit_btn.bind(on_release=self._edit_keys)
+        toolbar.add_widget(self._edit_btn)
+
+        self._fetch_btn = Button(text='Fetch', font_size='13sp')
+        self._fetch_btn.bind(on_release=self._fetch_keys)
+        toolbar.add_widget(self._fetch_btn)
+
+        self._upload_btn = Button(text='Upload', font_size='13sp', disabled=True)
+        self._upload_btn.bind(on_release=self._upload_keys)
+        toolbar.add_widget(self._upload_btn)
+
+        self._export_btn = Button(text='Export', font_size='13sp', disabled=True)
+        self._export_btn.bind(on_release=self._export_keys)
+        toolbar.add_widget(self._export_btn)
+
+        self._delete_btn = Button(text='Delete', font_size='13sp', disabled=True,
+)
+        self._delete_btn.bind(on_release=self._delete_keys)
+        toolbar.add_widget(self._delete_btn)
+
+        layout.add_widget(toolbar)
+
+        # Scrollable key list with checkboxes
+        self._key_scroll = ScrollView()
+        self._key_list_layout = BoxLayout(orientation='vertical',
+                                          size_hint_y=None, spacing=2, padding=2)
+        self._key_list_layout.bind(
+            minimum_height=self._key_list_layout.setter('height'))
+        self._key_scroll.add_widget(self._key_list_layout)
+        layout.add_widget(self._key_scroll)
+
+        self.add_widget(layout)
+
+    def on_enter(self):
+        super().on_enter()
+        App.get_running_app().title = 'EZ GPG - Key Management'
+
+    def on_pre_enter(self):
+        self._selected_keys = []
+        self._refresh_key_list()
+
+    def _refresh_key_list(self):
+        self._key_list_layout.clear_widgets()
+        self._key_checkboxes = []
+        self._selected_keys = []
+
+        for key in GpgUtils.get_gpg_keys():
+            key_id = key[0]
+            key_friendly_name = key[2]
+
+            row = BoxLayout(size_hint_y=None, height=28)
+            cb = CheckBox(size_hint_x=None, width=28)
+            cb.key_id = key_id
+            cb.bind(active=self._on_key_toggled)
+            row.add_widget(cb)
+            row.add_widget(Label(text=key_friendly_name, halign='left',
+                                 text_size=(500, None), font_size='13sp'))
+
+            self._key_checkboxes.append(cb)
+            self._key_list_layout.add_widget(row)
+
+        self._update_button_state()
+
+    def _on_key_toggled(self, checkbox, value):
+        key_id = checkbox.key_id
+        if value:
+            if key_id not in self._selected_keys:
+                self._selected_keys.append(key_id)
+        else:
+            self._selected_keys = [k for k in self._selected_keys if k != key_id]
 
         print("New selection list:")
         for key in self._selected_keys:
@@ -223,39 +647,135 @@ class KeyManagementWindow(GenericWindow):
         self._update_button_state()
 
     def _update_button_state(self):
-        self._edit_key_button.set_sensitive(len(self._selected_keys) == 1)
-        self._export_key_button.set_sensitive(len(self._selected_keys) == 1)
-        self._upload_key_button.set_sensitive(len(self._selected_keys) > 0)
-        self._delete_key_button.set_sensitive(len(self._selected_keys) > 0)
+        self._edit_btn.disabled = len(self._selected_keys) != 1
+        self._export_btn.disabled = len(self._selected_keys) != 1
+        self._upload_btn.disabled = len(self._selected_keys) == 0
+        self._delete_btn.disabled = len(self._selected_keys) == 0
 
-    def create_keys(self, action=None, param=None):
+    def _create_keys(self, instance):
         print("Create Keys pressed...")
-        child_window = CreateKeyWindow(self._app, on_created=self._refresh_key_list)
-        child_window.set_modal(True)
-        child_window.set_transient_for(self)
-        child_window.present()
-        self._app.add_window(child_window)
+        self.manager.transition = NoTransition()
+        self.manager.current = 'create_key'
 
-    def edit_keys(self, action=None, param=None):
-        print("Edit Keys pressed...")
-        UiUtils.show_unimplemented_message_box(self)
-
-    def import_keys(self, action=None, param=None):
+    def _import_keys(self, instance):
         print("Import Keys pressed...")
-        filename = UiUtils.get_filename(self)
+        filename = UiUtils.get_filename(title="Import key file")
         if filename:
             print("Chosen file to import:", filename)
             if GpgUtils.import_key(filename):
-                # TODO: Make the new key bold
                 self._refresh_key_list()
             else:
-                UiUtils.show_dialog(self,
+                UiUtils.show_dialog(None,
                                     "ERROR! Keyfile could not be imported",
                                     title="Keyfile error")
 
-    def export_keys(self, action=None, param=None):
+    def _edit_keys(self, instance):
+        print("Edit Keys pressed...")
+        UiUtils.show_unimplemented_message_box()
+
+    def _fetch_keys(self, instance):
+        print("Fetch Keys pressed...")
+
+        content = BoxLayout(orientation='vertical', padding=10, spacing=10)
+
+        ks_row = BoxLayout(size_hint_y=None, height=34, spacing=8)
+        ks_row.add_widget(Label(text='Keyserver:', size_hint_x=None, width=80,
+                                halign='right', valign='middle',
+                                text_size=(80, 34), font_size='13sp'))
+        keyservers = Config.get_keyservers()
+        ks_spinner = KivySpinner(text=keyservers[0], values=keyservers,
+                                 font_size='12sp')
+        ks_row.add_widget(ks_spinner)
+        content.add_widget(ks_row)
+
+        id_row = BoxLayout(size_hint_y=None, height=34, spacing=8)
+        id_row.add_widget(Label(text='Key ID:', size_hint_x=None, width=80,
+                                halign='right', valign='middle',
+                                text_size=(80, 34), font_size='13sp'))
+        key_input = TextInput(multiline=False, font_size='13sp')
+        id_row.add_widget(key_input)
+        content.add_widget(id_row)
+
+        btn_row = BoxLayout(size_hint_y=None, height=40, spacing=10)
+        ok_btn = Button(text='OK')
+        cancel_btn = Button(text='Cancel')
+        btn_row.add_widget(ok_btn)
+        btn_row.add_widget(cancel_btn)
+        content.add_widget(btn_row)
+
+        popup = Popup(title='Fetch Key from Server', content=content,
+                      size_hint=(None, None), size=(450, 220),
+                      auto_dismiss=False)
+
+        def on_ok(inst):
+            keyserver = ks_spinner.text
+            key_id = key_input.text.strip()
+            popup.dismiss()
+            if key_id:
+                self._on_fetch_info(keyserver, key_id)
+
+        def on_cancel(inst):
+            popup.dismiss()
+
+        ok_btn.bind(on_release=on_ok)
+        cancel_btn.bind(on_release=on_cancel)
+        popup.open()
+
+    def _on_fetch_info(self, keyserver, key_id):
+        if key_id.startswith('0x'):
+            key_id = key_id[2:]
+
+        print(f"Key ID '0x{key_id}' requested")
+
+        if len(key_id) not in [8, 16, 40]:
+            self._show_error_message(f"Key ID ({key_id}) is not the correct length!")
+            return
+
+        if len(key_id) == 8:
+            UiUtils.confirm_dialog(
+                None,
+                "Careful! Short IDs (8-letter IDs) are easily "
+                "duplicated/faked!\n"
+                "Are you sure you want to proceed with this "
+                "(dangerous) operation?",
+                callback=lambda yes: self._do_fetch(keyserver, key_id) if yes else None)
+        elif len(key_id) == 16:
+            UiUtils.confirm_dialog(
+                None,
+                "Careful! Long IDs (16-letter IDs) could be "
+                "duplicated/faked!\n"
+                "Are you sure you want to proceed with this "
+                "operation?",
+                callback=lambda yes: self._do_fetch(keyserver, key_id) if yes else None)
+        else:
+            self._do_fetch(keyserver, key_id)
+
+    def _do_fetch(self, keyserver, key_id):
+        try:
+            fingerprint = GpgUtils.fetch_key(keyserver, key_id)
+            if not fingerprint:
+                self._show_error_message(
+                    f"ERROR! Could not fetch key with ID '0x{key_id}'")
+                return
+        except Exception as e:
+            self._show_error_message(str(e))
+            return
+
+        print("Fetched:", fingerprint)
+        UiUtils.show_dialog(None,
+                            f"Successful import of '0x{key_id}'!\n"
+                            f"Fingerprint: {fingerprint}",
+                            title="Fetch success",
+                            message_type="info")
+        self._refresh_key_list()
+
+    def _upload_keys(self, instance):
+        print("Upload Keys pressed...")
+        UiUtils.show_unimplemented_message_box()
+
+    def _export_keys(self, instance):
         print("Export Keys pressed...")
-        UiUtils.show_dialog(self,
+        UiUtils.show_dialog(None,
                             "This function only exports the public key!",
                             title="Notice")
 
@@ -264,157 +784,147 @@ class KeyManagementWindow(GenericWindow):
         key_name = key[2]
 
         # Turn key name into something FS-friendly
-        # XXX: There's probably a better way to do this
-        key_name = key_name.replace('|','')
-        key_name = key_name.replace('<','(')
-        key_name = key_name.replace('>',')')
-        key_name = re.sub(r'[^@a-zA-Z0-9()]+','_', key_name)
-        key_name = re.sub(r'__+','_', key_name)
+        key_name = key_name.replace('|', '')
+        key_name = key_name.replace('<', '(')
+        key_name = key_name.replace('>', ')')
+        key_name = re.sub(r'[^@a-zA-Z0-9()]+', '_', key_name)
+        key_name = re.sub(r'__+', '_', key_name)
 
-        filename, armor = UiUtils.get_save_filename(self, key_name)
+        filename, armor = UiUtils.get_save_filename(None, key_name)
 
         if not filename:
             print("Export cancelled")
             return
 
         print("Export target:", filename)
-
         GpgUtils.export_key(key_id, filename, armor)
-
         print(f"Key exported as {filename}...")
 
-    def upload_keys(self, action=None, param=None):
-        print("Upload Keys pressed...")
-        UiUtils.show_unimplemented_message_box(self)
-
-    def fetch_keys(self, action=None, param=None):
-        print("Fetch Keys pressed...")
-        key_id = UiUtils.get_string_from_user(self, "Enter key ID to fetch from server:",
-                                              max_length=42)
-
-        if not key_id:
-            print("Fetch cancelled")
-            return
-
-        if key_id.startswith('0x'):
-            key_id = key_id[2:]
-
-        # TODO: Check that the string is hex
-
-        print(f"Key ID '0x{key_id}' requested")
-
-        if len(key_id) not in [ 8, 16, 40 ]:
-            self._show_error_message(f"Key ID ({key_id}) is not the correct length!")
-            return
-
-        if len(key_id) == 8:
-            do_it = UiUtils.confirm_dialog(self,
-                                           "Careful! Short IDs (8-letter IDs) are easily " +
-                                           "duplicated/faked!\n" +
-                                           "Are you sure you want to proceed with this " +
-                                           "(dangerous) operation?")
-            if not do_it:
-                return
-
-        if len(key_id) == 16:
-            do_it = UiUtils.confirm_dialog(self,
-                                           "Careful! Long IDs (16-letter IDs) could be " +
-                                           "duplicated/faked!\n" +
-                                           "Are you sure you want to proceed with this "
-                                           "operation?")
-            if not do_it:
-                return
-
-        keyserver = self._keyserver_combo.get_active_id()
-        try:
-            fingerprint = GpgUtils.fetch_key(keyserver, key_id)
-            if not fingerprint:
-                self._show_error_message(f"ERROR! Could not fetch key with ID '0x{key_id}'")
-                return
-        except Exception as e:
-            self._show_error_message(str(e))
-            return
-
-        print("Fetched:", fingerprint)
-        UiUtils.show_dialog(self,
-                            f"Successful import of '0x{key_id}':!\n"
-                            f"Fingerprint: {fingerprint}",
-                            title="Fetch success",
-                            message_type=Gtk.MessageType.INFO)
-
-    def delete_keys(self, action=None, param=None):
+    def _delete_keys(self, instance):
         print("Delete Keys pressed...")
-        if not self.confirm_action(f"Are you sure you want to delete key ids: {self._selected_keys}"):
+        UiUtils.confirm_dialog(
+            None,
+            f"Are you sure you want to delete key ids: {self._selected_keys}",
+            callback=self._on_delete_confirmed)
+
+    def _on_delete_confirmed(self, confirmed):
+        if not confirmed:
             print("Action cancelled!")
             return
 
-        # TODO: Show which keys we're deleting
         for key in self._selected_keys:
             print("Trying to delete", key[-7:])
             delete_result = GpgUtils.delete_key(key)
             print("Delete key:", delete_result)
 
-            if delete_result:
-                self._refresh_key_list()
-
         print("Done deleting keys")
+        self._refresh_key_list()
 
-class CreateKeyWindow(GenericWindow):
-    def __init__(self, app, on_created=None):
-        super().__init__(app, 'create_key_window', "Create Key")
 
-        self._on_created = on_created
+class CreateKeyScreen(BaseScreen):
+    _window_size = (500, 380)
+    _back_target = 'key_management'
 
-        builder = self.get_builder()
+    def __init__(self, **kwargs):
+        super().__init__(name='create_key', **kwargs)
 
-        self._name_field = builder.get_object('ent_name')
-        self._email_field = builder.get_object('ent_email')
-        self._key_type_combo = builder.get_object('cmb_key_type')
-        self._key_length_combo = builder.get_object('cmb_key_length')
-        self._passphrase_field = builder.get_object('ent_passphrase')
-        self._confirm_passphrase_field = builder.get_object('ent_confirm_passphrase')
-        self._create_spinner = builder.get_object('spn_create')
-        self._create_button = builder.get_object('btn_do_create')
+        layout = BoxLayout(orientation='vertical', padding=15, spacing=8)
 
-        # Populate key type options
-        for key_type in ['RSA', 'DSA']:
-            self._key_type_combo.append_text(key_type)
-        self._key_type_combo.set_active(0)
+        # Form fields
+        form = GridLayout(cols=2, spacing=8, size_hint_y=None, height=250,
+                          col_default_width=110)
 
-        # Populate key length options
-        for key_length in ['2048', '3072', '4096']:
-            self._key_length_combo.append_text(key_length)
-        self._key_length_combo.set_active(2)  # Default to 4096
+        form.add_widget(Label(text='Name:', halign='right', valign='middle',
+                              size_hint_x=None, width=110, text_size=(110, 36),
+                              font_size='13sp'))
+        self._name_field = TextInput(multiline=False, size_hint_y=None, height=34,
+                                     font_size='13sp')
+        form.add_widget(self._name_field)
 
-        self._passphrase_field.connect('changed', self._check_passphrase_matching)
-        self._confirm_passphrase_field.connect('changed', self._check_passphrase_matching)
+        form.add_widget(Label(text='Email:', halign='right', valign='middle',
+                              size_hint_x=None, width=110, text_size=(110, 36),
+                              font_size='13sp'))
+        self._email_field = TextInput(multiline=False, size_hint_y=None, height=34,
+                                      font_size='13sp')
+        form.add_widget(self._email_field)
 
-        self.add(builder.get_object('create_key_window_vbox'))
+        form.add_widget(Label(text='Key Type:', halign='right', valign='middle',
+                              size_hint_x=None, width=110, text_size=(110, 36),
+                              font_size='13sp'))
+        self._key_type_spinner = KivySpinner(text='RSA', values=['RSA', 'DSA'],
+                                             size_hint_y=None, height=34,
+                                             font_size='13sp')
+        form.add_widget(self._key_type_spinner)
 
-    def _get_actions(self):
-        return [('create_key_window.do_create', self.do_create)]
+        form.add_widget(Label(text='Key Length:', halign='right', valign='middle',
+                              size_hint_x=None, width=110, text_size=(110, 36),
+                              font_size='13sp'))
+        self._key_length_spinner = KivySpinner(text='4096',
+                                               values=['2048', '3072', '4096'],
+                                               size_hint_y=None, height=34,
+                                               font_size='13sp')
+        form.add_widget(self._key_length_spinner)
 
-    def _check_passphrase_matching(self, widget):
-        passphrase = self._passphrase_field.get_text()
-        confirmed = self._confirm_passphrase_field.get_text()
+        form.add_widget(Label(text='Passphrase:', halign='right', valign='middle',
+                              size_hint_x=None, width=110, text_size=(110, 36),
+                              font_size='13sp'))
+        self._passphrase_field = TextInput(password=True, multiline=False,
+                                           size_hint_y=None, height=34,
+                                           font_size='13sp')
+        form.add_widget(self._passphrase_field)
 
-        if not passphrase or not confirmed:
-            self._confirm_passphrase_field.set_icon_from_icon_name(1, None)
-        elif passphrase == confirmed:
-            self._confirm_passphrase_field.set_icon_from_icon_name(1, None)
-        else:
-            self._confirm_passphrase_field.set_icon_from_icon_name(1, "dialog-error")
-            self._confirm_passphrase_field.set_icon_tooltip_text(1, "Passphrases do not match!")
+        form.add_widget(Label(text='Confirm:', halign='right', valign='middle',
+                              size_hint_x=None, width=110, text_size=(110, 36),
+                              font_size='13sp'))
+        self._confirm_passphrase_field = TextInput(password=True, multiline=False,
+                                                   size_hint_y=None, height=34,
+                                                   font_size='13sp')
+        form.add_widget(self._confirm_passphrase_field)
 
-    def do_create(self, action=None, param=None):
+        layout.add_widget(form)
+
+        # Spacer
+        layout.add_widget(BoxLayout())
+
+        # Status label
+        self._status_label = Label(text='', color=(0.6, 0, 0, 1),
+                                   size_hint_y=None, height=24, font_size='12sp')
+        layout.add_widget(self._status_label)
+
+        # Create button right-aligned
+        btn_row = BoxLayout(size_hint_y=None, height=36)
+        btn_row.add_widget(BoxLayout())
+        self._create_btn = Button(text='Create Key', size_hint_x=None, width=120,
+                                  font_size='14sp')
+        self._create_btn.bind(on_release=self._do_create)
+        btn_row.add_widget(self._create_btn)
+        layout.add_widget(btn_row)
+
+        self.add_widget(layout)
+
+    def on_enter(self):
+        super().on_enter()
+        App.get_running_app().title = 'EZ GPG \u2013 Create Key'
+
+    def on_pre_enter(self):
+        self._name_field.text = ''
+        self._email_field.text = ''
+        self._passphrase_field.text = ''
+        self._confirm_passphrase_field.text = ''
+        self._status_label.text = ''
+        self._create_btn.disabled = False
+        self._key_type_spinner.text = 'RSA'
+        self._key_length_spinner.text = '4096'
+
+    def _do_create(self, instance):
         print("Clicked Create Key button")
 
-        name = self._name_field.get_text().strip()
-        email = self._email_field.get_text().strip()
-        passphrase = self._passphrase_field.get_text()
-        confirmed = self._confirm_passphrase_field.get_text()
-        key_type = self._key_type_combo.get_active_text()
-        key_length = int(self._key_length_combo.get_active_text())
+        name = self._name_field.text.strip()
+        email = self._email_field.text.strip()
+        passphrase = self._passphrase_field.text
+        confirmed = self._confirm_passphrase_field.text
+        key_type = self._key_type_spinner.text
+        key_length = int(self._key_length_spinner.text)
 
         if not name:
             self._show_error_message("Name is required!")
@@ -437,512 +947,55 @@ class CreateKeyWindow(GenericWindow):
         print(f" - Key Type: {key_type}")
         print(f" - Key Length: {key_length}")
 
-        print(" - Locking UI and showing spinner.")
-        self._create_button.set_sensitive(False)
-        self._create_spinner.start()
+        self._create_btn.disabled = True
+        self._status_label.text = 'Creating key... please wait'
 
         fingerprint = GpgUtils.create_key(name, email, passphrase, key_type, key_length)
 
-        self._create_spinner.stop()
-
         if fingerprint:
             print(f" - Key created: {fingerprint}")
-            UiUtils.show_dialog(self,
+            UiUtils.show_dialog(None,
                                 f"Key created successfully!\n\nFingerprint:\n{fingerprint}",
                                 title="Key Created",
-                                message_type=Gtk.MessageType.INFO)
-
-            if self._on_created:
-                self._on_created()
-
-            self.destroy()
+                                message_type="info")
+            self._go_back()
         else:
             print(" - Key creation failed!")
-            self._create_button.set_sensitive(True)
+            self._create_btn.disabled = False
+            self._status_label.text = ''
             self._show_error_message("Failed to create key!")
 
 
-class EncryptWindow(GenericWindow):
-    def __init__(self, app):
-        super().__init__(app, 'encrypt_window', "Encrypt")
-
-        builder = self.get_builder()
-
-        self._key_list_box = builder.get_object('lst_key_selection')
-        self._file_chooser = builder.get_object('fc_main')
-        self._armor_output_check_box = builder.get_object('chk_armor')
-        self._encrypt_spinner = builder.get_object('spn_encrypt')
-        self._encrypt_button = builder.get_object('btn_do_encrypt')
-
-        self._encryption_type = builder.get_object('ntb_encryption_type')
-        self._password_field = builder.get_object('ent_password')
-        self._confirm_password_field = builder.get_object('ent_confirm_password')
-
-        # XXX: Armor param doesn't seem to produce armored output so we
-        #      disable this for now
-        self._armor_output_check_box.set_visible(False)
-
-        for key in GpgUtils.get_gpg_keys():
-            key_id = key[0]
-            key_friendly_name = key[2]
-
-            key_row = Gtk.CheckButton(key_friendly_name)
-            key_row.set_name(key_id)
-
-            self._key_list_box.add(key_row)
-
-        self._key_list_box.show_all()
-
-        self._password_field.connect('changed', self._check_password_matching)
-        self._confirm_password_field.connect('changed', self._check_password_matching)
-
-        self.add(builder.get_object('encrypt_window_vbox'))
-
-    def _get_actions(self):
-        return [('encrypt_window.do_encrypt', self.do_encrypt),
-                ]
-
-    def _check_password_matching(self, widget):
-        window = widget.get_toplevel()
-        password_field = window._password_field
-        confirm_password_field = window._confirm_password_field
-
-        password = password_field.get_text()
-        confirmed_password = confirm_password_field.get_text()
-
-        if password is None or confirmed_password is None:
-            confirm_password_field.set_icon_from_icon_name(1, None)
-        else:
-            if password == confirmed_password:
-                confirm_password_field.set_icon_from_icon_name(1, None)
-            else:
-                confirm_password_field.set_icon_from_icon_name(1, "dialog-error")
-                confirm_password_field.set_icon_tooltip_text(1, "Passwords do not match!")
-
-    def do_encrypt(self, action=None, param=None):
-        print("Clicked Encrypt Content button")
-
-        # TODO: Make this event driven vs post verification
-        print(" - Checking source file(s)")
-
-        filenames = self._file_chooser.get_filenames()
-        print("   - Filenames:", filenames)
-
-        if len(filenames) < 1:
-            self._show_error_message("File not selected!")
-            return
-
-        use_armor = self._armor_output_check_box.get_active()
-        print(f"Armor output: {use_armor}")
-
-        is_pki_encryption = self._encryption_type.get_current_page() == 0
-        print(" Using PKI:", is_pki_encryption)
-
-        if is_pki_encryption:
-            self._encrypt_pki(filenames, use_armor)
-        else:
-            self._encrypt_symmetric(filenames, use_armor)
-
-
-    def _encrypt_symmetric(self, filenames, use_armor):
-        password_field = self._password_field
-        confirm_password_field = self._confirm_password_field
-
-        password = password_field.get_text()
-        confirmed_password = confirm_password_field.get_text()
-
-        if password is None or confirmed_password is None:
-            self._show_error_message("No password set!")
-            return
-        elif password != confirmed_password:
-            self._show_error_message("Passwords do not match!")
-            return
-
-        print(" - Locking UI and showing spinner.")
-        self._encrypt_button.set_sensitive(False)
-        self._encrypt_spinner.start()
-
-        # XXX / TODO: We're having our main thread blocked by gnupg work
-        #             so we need to add threading at some point.
-        def finished_encryption_cb(self):
-            print(" - Finished. Stopping spinner.")
-            self._encrypt_spinner.stop()
-
-        GpgUtils.encrypt_files_symmetric(self, filenames, password,
-                                        use_armor, callback=finished_encryption_cb)
-
-        self.destroy()
-
-
-
-    def _encrypt_pki(self, filenames, use_armor):
-        print(" - Checking GPG key selection")
-        selected_keys = []
-        for list_box_row in self._key_list_box.get_children():
-            key_item = list_box_row.get_children()[0]
-            if key_item.get_active():
-                key_id = key_item.get_name()
-
-                print(f"   - Selected: {key_id}")
-                selected_keys.append(key_id)
-
-        # TODO: Make this event driven vs post verification
-        if len(selected_keys) == 0:
-            self._show_error_message("No key selected!")
-            return
-
-        # Disable encrypt button if we're in the middle of encryption
-        print(" - Locking UI and showing spinner.")
-        self._encrypt_button.set_sensitive(False)
-        self._encrypt_spinner.start()
-
-        # XXX / TODO: We're having our main thread blocked by gnupg work
-        #             so we need to add threading at some point.
-        def finished_encryption_cb(self):
-            print(" - Finished. Stopping spinner.")
-            self._encrypt_spinner.stop()
-
-        GpgUtils.encrypt_files_pki(self, filenames, selected_keys,
-                                   use_armor, callback=finished_encryption_cb)
-
-        self.destroy()
-
-class SignWindow(GenericWindow):
-    def __init__(self, app):
-        super().__init__(app, 'sign_window', "Sign file")
-
-        builder = self.get_builder()
-
-        self._source_file = builder.get_object('fc_source_file')
-
-        self._key_list = builder.get_object('cmb_key_list')
-        GpgUtils.add_gpg_keys_to_combo_box(self._key_list, True)
-
-        self._password_field = builder.get_object('ent_password')
-
-        self._armor_output_check_box = builder.get_object('chk_armor')
-        self._sign_spinner = builder.get_object('spn_sign')
-        self._sign_button = builder.get_object('btn_do_sign')
-
-        # XXX: Armor param doesn't seem to produce armored output so we
-        #      disable this for now
-        self._armor_output_check_box.set_visible(False)
-
-        self._key_list.connect('changed', self._check_key_password)
-        self._password_field.connect('changed', self._check_key_password)
-
-        self.add(builder.get_object('sign_window_vbox'))
-
-    def _get_actions(self):
-        return [('sign_window.do_sign', self.do_sign),
-                ]
-
-    def _check_key_password(self, widget):
-        window = widget.get_toplevel()
-        password_field = window._password_field
-        selected_key = self._key_list.get_active_id()
-        if selected_key:
-            if GpgUtils.check_key_password(selected_key, password_field.get_text()):
-                password_field.set_icon_from_icon_name(1, None)
-            else:
-                password_field.set_icon_from_icon_name(1, "dialog-error")
-                password_field.set_icon_tooltip_text(1, "Invalid password for the selected key!")
-
-    def do_sign(self, action=None, param=None):
-        print("Clicked Sign button")
-
-        # TODO: Make this event driven vs post verification
-        print(" - Checking source file(s)")
-        source_file = self._source_file.get_filename()
-        if not source_file:
-            self._show_error_message("File not selected!")
-            return
-
-        print(" - Checking GPG key selection")
-        selected_key = self._key_list.get_active_id()
-        # TODO: Make this event driven vs post verification
-        if not selected_key:
-            self._show_error_message("No key selected!")
-            return
-
-        print(" - Key Id:", selected_key)
-
-        use_armor = self._armor_output_check_box.get_active()
-        print(f" - Armor output: {use_armor}")
-
-        # Disable encrypt button if we're in the middle of encryption
-        print(" - Locking UI and showing spinner.")
-        self._sign_button.set_sensitive(False)
-        self._sign_spinner.start()
-
-        # XXX / TODO: We're having our main thread blocked by gnupg work
-        #             so we need to add threading at some point.
-        def finished_encryption_cb(self):
-            print(" - Finished. Stopping spinner.")
-            self._sign_spinner.stop()
-            self._sign_button.set_sensitive(True)
-
-        success = GpgUtils.sign_file(self, source_file, selected_key,
-                                       self._password_field.get_text(),
-                                       callback=finished_encryption_cb)
-
-        if success:
-            self.destroy()
-        else:
-            finished_encryption_cb(self)
-
-
-class DecryptWindow(GenericWindow):
-    def __init__(self, app):
-        super().__init__(app, 'decrypt_window', "Decrypt file")
-
-        builder = self.get_builder()
-
-        self._source_file = builder.get_object('fc_source_file')
-
-        self._key_list = builder.get_object('cmb_key_list')
-        GpgUtils.add_gpg_keys_to_combo_box(self._key_list, True)
-
-        # TODO: Use a real ID
-        self._key_list.get_model().append(['symmetric',
-                                           'Symmetric encryption (password only)'])
-
-        # Prefetch the list
-        self._gpg_keys = GpgUtils.get_gpg_keys(True)
-
-        # Install a filter
-        self._key_filter = self._key_list.get_model().filter_new()
-        self._key_filter.set_visible_func(self._filter_key_ids)
-        self._key_list.set_model(self._key_filter)
-
-        self._password_field = builder.get_object('ent_password')
-
-        self._armor_output_check_box = builder.get_object('chk_armor')
-        self._decrypt_spinner = builder.get_object('spn_decrypt')
-        self._decrypt_button = builder.get_object('btn_do_decrypt')
-
-        self._source_file.connect('file-set', self._update_key_list)
-        self._key_list.connect('changed', self._check_key_password)
-        self._password_field.connect('changed', self._check_key_password)
-
-        self.add(builder.get_object('decrypt_window_vbox'))
-
-    def _get_actions(self):
-        return [('decrypt_window.do_decrypt', self.do_decrypt),
-                ]
-
-    # XXX: Nasty but no easy way to compare subkeys for all items with
-    #      inconsistent lengths between two arrays
-    def _filter_key_ids(self, model, iter, data):
-        if not self._source_file.get_filename():
-            return False
-
-        info = self._encrypted_file_info
-
-        if info.is_symmetric:
-            return model[iter][0] == 'symmetric'
-
-        matching_keys = list(filter(lambda x: x[0] == model[iter][0], self._gpg_keys))
-        if len(matching_keys) == 0:
-            return False
-
-        key_id, key_name, key_friendly_name, subkeys, fingerprint = matching_keys[0]
-
-        # Check primary key ID, fingerprint, and all subkeys against
-        # the encryption key IDs extracted from the file
-        all_key_ids = [key_id, fingerprint] + subkeys
-        for candidate in all_key_ids:
-            # print(f"Comparing {candidate} in {info.key_ids}")
-            for encryption_key in info.key_ids:
-                if candidate.endswith(encryption_key) or encryption_key.endswith(candidate):
-                    print("Found! Matching key:", key_id, key_name)
-                    info.matching_key = key_id
-                    return True
-
+class EzGpg(App):
+    title = 'EZ GPG'
+
+    def build(self):
+        Window.size = (280, 220)
+
+        sm = ScreenManager(transition=NoTransition())
+        sm.add_widget(MainScreen())
+        sm.add_widget(EncryptScreen())
+        sm.add_widget(DecryptScreen())
+        sm.add_widget(SignScreen())
+        sm.add_widget(VerifyScreen())
+        sm.add_widget(KeyManagementScreen())
+        sm.add_widget(CreateKeyScreen())
+
+        # ESC key to go back
+        Window.bind(on_keyboard=self._on_keyboard)
+
+        return sm
+
+    def _on_keyboard(self, window, key, *args):
+        if key == 27:  # ESC
+            sm = self.root
+            if sm.current != 'main':
+                screen = sm.current_screen
+                back = getattr(screen, '_back_target', 'main')
+                sm.transition = NoTransition()
+                sm.current = back
+                return True
         return False
-
-    def _update_key_list(self, widget):
-        print("File changed - checking for key_ids...")
-        self._encrypted_file_info = GpgUtils.get_encryped_file_info(self,
-                                                                      widget.get_filename())
-
-        info = self._encrypted_file_info
-        if not info:
-            return
-
-        if info.is_symmetric:
-            print("Symmetric encryption")
-            self._key_filter.refilter()
-            self._key_list.set_active_id('symmetric')
-        else:
-            print("Keys: ", info.key_ids)
-            self._key_filter.refilter()
-
-            if info.matching_key:
-                self._key_list.set_active_id(info.matching_key)
-            else:
-                UiUtils.show_dialog(self,
-                                    "ERROR! You do not have a key that decrypt this file!",
-                                    title="Missing decryption key")
-
-        self._check_key_password(widget)
-
-    def _check_key_password(self, widget):
-        window = widget.get_toplevel()
-        password_field = window._password_field
-        selected_key = self._key_list.get_active_id()
-
-        if not selected_key or \
-           selected_key == 'symmetric':
-            password_field.set_icon_from_icon_name(1, None)
-        else:
-            if GpgUtils.check_key_password(selected_key, password_field.get_text()):
-                password_field.set_icon_from_icon_name(1, None)
-            else:
-                password_field.set_icon_from_icon_name(1, "dialog-error")
-                password_field.set_icon_tooltip_text(1, "Invalid password for the selected key!")
-
-    def do_decrypt(self, action=None, param=None):
-        print("Clicked Decrypt button")
-
-        # TODO: Make this event driven vs post verification
-        print(" - Checking source file(s)")
-        source_file = self._source_file.get_filename()
-        if not source_file:
-            self._show_error_message("File not selected!")
-            return
-
-        selected_key = self._key_list.get_active_id()
-        print(" - Key Id:", selected_key)
-
-        # Disable encrypt button if we're in the middle of encryption
-        print(" - Locking UI and showing spinner.")
-        self._decrypt_button.set_sensitive(False)
-        self._decrypt_spinner.start()
-
-        # XXX / TODO: We're having our main thread blocked by gnupg work
-        #             so we need to add threading at some point.
-        def finished_decryption_cb(self):
-            print(" - Finished. Stopping spinner.")
-            self._decrypt_spinner.stop()
-            self._decrypt_button.set_sensitive(True)
-
-        success = GpgUtils.decrypt_file(self, source_file,
-                                          self._password_field.get_text(),
-                                          callback=finished_decryption_cb)
-
-        if success:
-            self.destroy()
-        else:
-            finished_decryption_cb(self)
-
-
-class VerifyWindow(GenericWindow):
-    def __init__(self, app):
-        super().__init__(app, 'verify_window', "Verify Signature")
-
-        builder = self.get_builder()
-
-        self._source_file = builder.get_object('fc_source_file')
-        self._signature_file = builder.get_object('fc_signature_file')
-        self._verify_button = builder.get_object('btn_do_verify')
-
-        self.add(builder.get_object('verify_window_vbox'))
-
-    def _get_actions(self):
-        return [('verify_window.do_verify', self.do_verify),
-                ]
-
-    def do_verify(self, action=None, param=None):
-        print("Clicked Verify Signature button")
-
-        # TODO: Make this event driven vs post verification
-        print(" - Checking source file(s)")
-        source_file = self._source_file.get_filename()
-        if not source_file:
-            self._show_error_message("File not selected!")
-            return
-
-        signature_file = self._signature_file.get_filename()
-        print(" - Using signature file:", signature_file)
-
-        # Disable verify button if we're in the middle of verification
-        self._verify_button.set_sensitive(False)
-
-        if GpgUtils.verify_file(self, source_file, signature_file):
-            self.destroy()
-        else:
-            self._verify_button.set_sensitive(True)
-
-
-class EzGpg(Gtk.Application):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, application_id="org.sgnn7.ezgpg",
-                         flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE,
-                         **kwargs)
-
-        GLib.set_application_name("Ez Gpg")
-        GLib.set_prgname('EZ GPG')
-
-        self._window = None
-        self._encrypt_window = None
-
-        self._actions = [
-            ('about', True, self.on_about),
-            ('quit',  True, self.on_quit),
-        ]
-
-    def do_startup(self):
-        print("Starting up...")
-        Gtk.Application.do_startup(self)
-
-        for action, is_menu_item, callback in self._actions:
-            simple_action = Gio.SimpleAction.new(action, None)
-            simple_action.connect('activate', callback)
-            self.add_action(simple_action)
-
-    def do_activate(self):
-        print("Activating...")
-        if not self._window:
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            css_provider = Gtk.CssProvider()
-            css_provider.load_from_path(os.path.join(_DATA_DIR, 'application.css'))
-
-            screen = Gdk.Screen.get_default()
-            style_context = Gtk.StyleContext()
-            style_context.add_provider_for_screen(screen,
-                                                  css_provider,
-                                                  Gtk.STYLE_PROVIDER_PRIORITY_USER)
-
-            self._window = MainWindow(self)
-            self._window.show_all()
-
-        self.add_window(self._window)
-
-        self._window.present()
-
-    def do_command_line(self, command_line):
-        # options = command_line.get_options_dict()
-
-        # if options.contains("test"):
-        #     pass
-        # self.activate()
-        # return 0
-
-        self.activate()
-
-        return 0
-
-    def on_about(self, action=None, param=None):
-        print("About button pressed")
-        about_dialog = Gtk.AboutDialog(transient_for=self._window, modal=True)
-        about_dialog.present()
-
-    def on_quit(self, action=None, param=None):
-        print("Quitting...")
-        self._window.destroy()
-
-        self.quit()
 
     @staticmethod
     def launch():

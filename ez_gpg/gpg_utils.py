@@ -1,15 +1,11 @@
 # vim:ff=unix ts=4 sw=4 expandtab
 
-import gi
 import gnupg  # Requires python3-gnupg
 import os
 import re
 import shutil
 import subprocess
 import sys
-
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
 
 from .config import Config
 from .ui_utils import UiUtils
@@ -171,21 +167,6 @@ class GpgUtils:
         return gpg.import_keys(key_data)
 
     @staticmethod
-    def add_gpg_keys_to_combo_box(combo_box, secret=False):
-        gpg_keys_list = Gtk.ListStore(str, str)
-        for key in GpgUtils.get_gpg_keys(secret):
-            key_id = key[0]
-            key_name = key[1]
-            gpg_keys_list.append([key_id, key_name])
-
-        cell = Gtk.CellRendererText()
-        combo_box.pack_start(cell, True)
-        combo_box.add_attribute(cell, 'text', 1)
-
-        combo_box.set_model(gpg_keys_list)
-        combo_box.set_entry_text_column(1)
-
-    @staticmethod
     def encrypt_files_pki(window, filenames, key_ids, use_armor=True, callback=None):
         conversion_list = []
         for filename in filenames:
@@ -215,7 +196,7 @@ class GpgUtils:
 
         UiUtils.show_dialog(window,
                             "Encrypted!",
-                            message_type=Gtk.MessageType.INFO)
+                            message_type="info")
 
     @staticmethod
     def encrypt_files_symmetric(window, filenames, password, use_armor=True, callback=None):
@@ -250,7 +231,7 @@ class GpgUtils:
 
         UiUtils.show_dialog(window,
                             "Encrypted!",
-                            message_type=Gtk.MessageType.INFO)
+                            message_type="info")
 
     @staticmethod
     def sign_file(window, filename, key_id, password, use_armor=True, callback=None):
@@ -280,13 +261,13 @@ class GpgUtils:
         success = True
         dialog_title = "Completed!"
         message_text = f"Signature can be found at:\n{signature_file}"
-        message_type = Gtk.MessageType.INFO
+        message_type = "info"
 
         if not status:
             success = False
             dialog_title = "FAILED!"
             message_text = f"Unable to sign {filename}!"
-            message_type = Gtk.MessageType.ERROR
+            message_type = "error"
 
         UiUtils.show_dialog(window,
                             message_text,
@@ -320,13 +301,13 @@ class GpgUtils:
         success = True
         dialog_title = "Completed!"
         message_text = f"Decrypted file can be found at:\n{decrypted_file}"
-        message_type = Gtk.MessageType.INFO
+        message_type = "info"
 
         if not status:
             success = False
             dialog_title = "FAILED!"
             message_text = f"Unable to decrypt {filename}!"
-            message_type = Gtk.MessageType.ERROR
+            message_type = "error"
 
         UiUtils.show_dialog(window,
                             message_text,
@@ -358,7 +339,6 @@ class GpgUtils:
                                 "ERROR! GPG binary not found in path!",
                                 title="GPG not found")
 
-            window.destroy()
             return None
 
         command = [gpg_binary, f'--keyring={os.devnull}',
@@ -441,20 +421,20 @@ class GpgUtils:
 
         dialog_title = "Verified!"
         message_text = '\n'.join(success_message)
-        message_type = Gtk.MessageType.INFO
+        message_type = "info"
 
         if not verification.valid:
             dialog_title = "BAD SIGNATURE!"
             message_text = f"Signature for {source_filename} was verified and it was bad!"
-            message_type = Gtk.MessageType.ERROR
+            message_type = "error"
         elif not verification.trust_level:
             dialog_title = "NOT VERIFIED!"
             message_text = f"Signature for {source_filename} CANNOT be verified!\nIt was either not included or was bad!"
-            message_type = Gtk.MessageType.ERROR
+            message_type = "error"
         elif verification.trust_level < verification.TRUST_MARGINAL:
             dialog_title = "NOT TRUSTED ENOGUH!"
             message_text = f"Signature for {source_filename} was verified but you don't trust it enough!"
-            message_type = Gtk.MessageType.ERROR
+            message_type = "error"
 
         UiUtils.show_dialog(window,
                             message_text,

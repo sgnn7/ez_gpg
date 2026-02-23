@@ -1,175 +1,268 @@
 # vim:ff=unix ts=4 sw=4 expandtab
 
-import gi
+import os
+import shutil
+import subprocess
 import sys
 import traceback
 
-gi.require_version('Gtk', '3.0')
+from kivy.uix.popup import Popup
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.uix.button import Button
+from kivy.uix.textinput import TextInput
 
-from gi.repository import Gtk
+
+class _FileChooser:
+    """Cross-platform native file chooser using osascript (macOS) or
+    zenity/kdialog (Linux).  Returns paths as Python lists or None."""
+
+    @staticmethod
+    def _run(script):
+        """Run an AppleScript via osascript and return stdout, or None on cancel."""
+        try:
+            result = subprocess.run(
+                ['osascript', '-e', script],
+                capture_output=True, text=True, timeout=120)
+            if result.returncode != 0:
+                return None
+            output = result.stdout.strip()
+            return output if output else None
+        except Exception as e:
+            print(f"osascript error: {e}")
+            return None
+
+    @staticmethod
+    def _run_linux(args):
+        """Run a Linux dialog tool and return stdout, or None on cancel."""
+        try:
+            result = subprocess.run(args, capture_output=True, text=True, timeout=120)
+            if result.returncode != 0:
+                return None
+            output = result.stdout.strip()
+            return output if output else None
+        except Exception as e:
+            print(f"File dialog error: {e}")
+            return None
+
+    @staticmethod
+    def open_file(title="Open...", multiple=False):
+        if sys.platform == 'darwin':
+            multi = ' with multiple selections allowed' if multiple else ''
+            script = (
+                f'set chosenFiles to choose file with prompt "{title}"{multi}\n'
+            )
+            if multiple:
+                script += (
+                    'set output to ""\n'
+                    'repeat with f in chosenFiles\n'
+                    '    set output to output & POSIX path of f & linefeed\n'
+                    'end repeat\n'
+                    'output'
+                )
+            else:
+                script += 'POSIX path of chosenFiles'
+
+            raw = _FileChooser._run(script)
+            if not raw:
+                return None
+            paths = [p for p in raw.split('\n') if p.strip()]
+            return paths if paths else None
+        else:
+            zenity = shutil.which('zenity')
+            kdialog = shutil.which('kdialog')
+            if zenity:
+                args = ['zenity', '--file-selection', f'--title={title}']
+                if multiple:
+                    args.append('--multiple')
+                    args.append('--separator=\n')
+                raw = _FileChooser._run_linux(args)
+                if not raw:
+                    return None
+                return [p for p in raw.split('\n') if p.strip()] or None
+            elif kdialog:
+                args = ['kdialog', '--getopenfilename', os.path.expanduser('~'), '*']
+                if multiple:
+                    args = ['kdialog', '--getopenfilename', os.path.expanduser('~'), '*',
+                            '--multiple', '--separate-output']
+                raw = _FileChooser._run_linux(args)
+                if not raw:
+                    return None
+                return [p for p in raw.split('\n') if p.strip()] or None
+
+        print("No native file dialog available")
+        return None
+
+    @staticmethod
+    def save_file(title="Save...", default_name=""):
+        if sys.platform == 'darwin':
+            default_clause = ''
+            if default_name:
+                default_clause = f' default name "{default_name}"'
+            script = (
+                f'set chosenFile to choose file name with prompt "{title}"{default_clause}\n'
+                'POSIX path of chosenFile'
+            )
+            raw = _FileChooser._run(script)
+            if not raw:
+                return None
+            return [raw.strip()]
+        else:
+            zenity = shutil.which('zenity')
+            kdialog = shutil.which('kdialog')
+            if zenity:
+                args = ['zenity', '--file-selection', '--save',
+                        f'--title={title}', '--confirm-overwrite']
+                if default_name:
+                    args.append(f'--filename={default_name}')
+                raw = _FileChooser._run_linux(args)
+                if not raw:
+                    return None
+                return [raw.strip()]
+            elif kdialog:
+                path = os.path.join(os.path.expanduser('~'), default_name)
+                args = ['kdialog', '--getsavefilename', path]
+                raw = _FileChooser._run_linux(args)
+                if not raw:
+                    return None
+                return [raw.strip()]
+
+        print("No native file dialog available")
+        return None
+
 
 class UiUtils:
     @staticmethod
-    def show_unimplemented_message_box(window):
-        UiUtils.show_dialog(window,
+    def show_unimplemented_message_box(parent=None):
+        UiUtils.show_dialog(parent,
                             "This functionality is not yet implemented!",
                             "Not Implemented")
 
     @staticmethod
-    def show_dialog(window, message, title="EzGpG", message_type=Gtk.MessageType.WARNING):
-        dialog = Gtk.MessageDialog(window,
-                                   Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
-                                   message_type,
-                                   Gtk.ButtonsType.OK,
-                                   title)
-        dialog.format_secondary_text(message)
+    def show_dialog(parent, message, title="EzGpG", message_type="warning"):
+        content = BoxLayout(orientation='vertical', padding=10, spacing=10)
+        content.add_widget(Label(
+            text=message,
+            halign='center',
+            valign='middle',
+            color=(0, 0, 0, 1),
+            text_size=(350, None),
+            size_hint_y=None,
+            height=120))
 
-        response = dialog.run()
+        btn = Button(text='OK', size_hint_y=None, height=44)
+        content.add_widget(btn)
 
-        dialog.destroy()
-
-    @staticmethod
-    def _set_keyfile_filter(dialog):
-        filter_keys = Gtk.FileFilter()
-        filter_keys.set_name("Armored keys")
-        filter_keys.add_pattern("*.asc")
-        filter_keys.add_pattern("*.key")
-        filter_keys.add_pattern("*.pub")
-        dialog.add_filter(filter_keys)
-
-        filter_any = Gtk.FileFilter()
-        filter_any.set_name("Any files")
-        filter_any.add_pattern("*")
-        dialog.add_filter(filter_any)
+        popup = Popup(title=title, content=content,
+                      size_hint=(None, None), size=(420, 250),
+                      auto_dismiss=False)
+        btn.bind(on_release=popup.dismiss)
+        popup.open()
 
     @staticmethod
-    def get_filename(window, title="Open..."):
-        dialog = Gtk.FileChooserDialog(title,
-                                       window,
-                                       Gtk.FileChooserAction.OPEN,
-                                       ("_Cancel",
-                                        Gtk.ResponseType.CANCEL,
-                                        "_Open",
-                                        Gtk.ResponseType.OK))
+    def confirm_dialog(parent, message, callback=None):
+        content = BoxLayout(orientation='vertical', padding=10, spacing=10)
+        content.add_widget(Label(
+            text=message,
+            halign='center',
+            valign='middle',
+            color=(0, 0, 0, 1),
+            text_size=(380, None),
+            size_hint_y=None,
+            height=140))
 
-        dialog.set_default_response(Gtk.ResponseType.OK)
-        UiUtils._set_keyfile_filter(dialog)
+        btn_layout = BoxLayout(size_hint_y=None, height=44, spacing=10)
+        yes_btn = Button(text='Yes')
+        no_btn = Button(text='No')
+        btn_layout.add_widget(yes_btn)
+        btn_layout.add_widget(no_btn)
+        content.add_widget(btn_layout)
 
-        response = dialog.run()
+        popup = Popup(title="EzGPG", content=content,
+                      size_hint=(None, None), size=(450, 280),
+                      auto_dismiss=False)
 
-        filename = None
-        if response == Gtk.ResponseType.OK:
-            filename = dialog.get_filename()
+        def on_yes(instance):
+            popup.dismiss()
+            if callback:
+                callback(True)
 
-        dialog.destroy()
-        return filename
+        def on_no(instance):
+            popup.dismiss()
+            if callback:
+                callback(False)
+
+        yes_btn.bind(on_release=on_yes)
+        no_btn.bind(on_release=on_no)
+        popup.open()
 
     @staticmethod
-    def _set_save_keyfile_filter(dialog):
-        filter_armor_key = Gtk.FileFilter()
-        filter_armor_key.set_name("Armored key")
-        filter_armor_key.add_pattern("*.asc")
-        dialog.add_filter(filter_armor_key)
-
-        filter_binary_key = Gtk.FileFilter()
-        filter_binary_key.set_name("Encoded key")
-        filter_binary_key.add_pattern("*.gpg")
-        dialog.add_filter(filter_binary_key)
+    def get_filename(parent=None, title="Open..."):
+        selection = _FileChooser.open_file(title=title)
+        if selection:
+            return selection[0]
+        return None
 
     @staticmethod
-    def get_save_filename(window, filename, title="Save..."):
-        dialog = Gtk.FileChooserDialog(title,
-                                       window,
-                                       Gtk.FileChooserAction.SAVE,
-                                       ("_Cancel",
-                                        Gtk.ResponseType.CANCEL,
-                                        "_Save",
-                                        Gtk.ResponseType.ACCEPT))
+    def get_filenames(parent=None, title="Open...", multiple=True):
+        return _FileChooser.open_file(title=title, multiple=multiple)
 
-        dialog.set_default_response(Gtk.ResponseType.OK)
-        dialog.set_do_overwrite_confirmation(True)
-        dialog.set_current_name(filename)
-        UiUtils._set_save_keyfile_filter(dialog)
-
-        response = dialog.run()
-
-        filename = None
+    @staticmethod
+    def get_save_filename(parent, filename, title="Save..."):
         armor = True
-        if response == Gtk.ResponseType.ACCEPT:
-            filename = dialog.get_filename()
-
-            if dialog.get_filter().get_name() == 'Encoded key':
+        selection = _FileChooser.save_file(title=title, default_name=filename)
+        if selection:
+            chosen = selection[0]
+            if chosen.endswith('.gpg'):
                 armor = False
-
-            # Suffix the filename
-            if not (filename.endswith('.asc') or filename.endswith('.gpg')):
-                suffix = '.asc'
-                if not armor:
-                    suffix = '.gpg'
-
-                filename += suffix
-
-            print(f"Filename chosen as: {filename}")
-
-        dialog.destroy()
-        return filename, armor
+            elif not (chosen.endswith('.asc') or chosen.endswith('.gpg')):
+                chosen += '.asc'
+            print(f"Filename chosen as: {chosen}")
+            return chosen, armor
+        return None, armor
 
     @staticmethod
-    def get_string_from_user(window, message, title="Input required", max_length=None):
-        dialog = Gtk.MessageDialog(window,
-                                   Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
-                                   Gtk.MessageType.QUESTION,
-                                   Gtk.ButtonsType.OK_CANCEL,
-                                   message)
-        dialog.set_title(title)
+    def get_string_from_user(parent, message, title="Input required",
+                             max_length=None, callback=None):
+        content = BoxLayout(orientation='vertical', padding=10, spacing=10)
+        content.add_widget(Label(
+            text=message,
+            halign='center',
+            valign='middle',
+            color=(0, 0, 0, 1),
+            text_size=(380, None),
+            size_hint_y=None,
+            height=60))
 
-        dialog.set_default_response(Gtk.ResponseType.OK)
+        text_input = TextInput(multiline=False, size_hint_y=None, height=40)
+        content.add_widget(text_input)
 
-        dialog_box = dialog.get_content_area()
+        btn_layout = BoxLayout(size_hint_y=None, height=44, spacing=10)
+        ok_btn = Button(text='OK')
+        cancel_btn = Button(text='Cancel')
+        btn_layout.add_widget(ok_btn)
+        btn_layout.add_widget(cancel_btn)
+        content.add_widget(btn_layout)
 
-        input_entry = Gtk.Entry()
-        input_entry.set_size_request(350,0)
+        popup = Popup(title=title, content=content,
+                      size_hint=(None, None), size=(450, 260),
+                      auto_dismiss=False)
 
-        if max_length is not None:
-            print("Setting max length to", max_length)
-            input_entry.set_max_length(max_length)
+        def on_ok(instance):
+            text = text_input.text.strip()
+            popup.dismiss()
+            if callback:
+                callback(text if text else None)
 
-        input_entry_holder = Gtk.Box()
-        input_entry_holder.pack_end(input_entry, True, False, 0)
+        def on_cancel(instance):
+            popup.dismiss()
+            if callback:
+                callback(None)
 
-        dialog_box.pack_end(input_entry_holder, False, False, 0)
-        dialog.show_all()
+        ok_btn.bind(on_release=on_ok)
+        cancel_btn.bind(on_release=on_cancel)
+        popup.open()
 
-        def input_entry_activate(*args):
-            print("Enter pressed")
-            dialog.response(Gtk.ResponseType.OK)
-
-        input_entry.connect('activate', input_entry_activate)
-
-        response = dialog.run()
-        text = input_entry.get_text()
-
-        dialog.destroy()
-
-        if (response != Gtk.ResponseType.OK) or len(text) == 0:
-            return None
-
-        return text
-
-    @staticmethod
-    def confirm_dialog(window, message):
-        dialog = Gtk.MessageDialog(window, 0,
-                                   Gtk.MessageType.QUESTION,
-                                   Gtk.ButtonsType.YES_NO,
-                                   "EzGPG")
-
-        dialog.format_secondary_text(message)
-        dialog.set_default_response(Gtk.ResponseType.NO)
-
-        response = dialog.run()
-        dialog.destroy()
-
-        return response == Gtk.ResponseType.YES
 
 class error_wrapper:
     """Error handler decorator"""
@@ -180,14 +273,24 @@ class error_wrapper:
         # Print details on console
         traceback.print_exception(*stack_trace)
 
-        msg = Gtk.MessageDialog(message_type=Gtk.MessageType.ERROR,
-                                buttons=Gtk.ButtonsType.CLOSE,
-                                message_format=f"Type: {error.__class__.__name__}")
-        msg.set_title("Unhandled Error")
-        msg.format_secondary_text(f"Description: {error}")
+        content = BoxLayout(orientation='vertical', padding=10, spacing=10)
+        content.add_widget(Label(
+            text=f"Type: {error.__class__.__name__}\nDescription: {error}",
+            halign='center',
+            valign='middle',
+            color=(0, 0, 0, 1),
+            text_size=(400, None),
+            size_hint_y=None,
+            height=120))
 
-        msg.run()
-        msg.destroy()
+        btn = Button(text='Close', size_hint_y=None, height=44)
+        content.add_widget(btn)
+
+        popup = Popup(title="Unhandled Error", content=content,
+                      size_hint=(None, None), size=(480, 280),
+                      auto_dismiss=False)
+        btn.bind(on_release=popup.dismiss)
+        popup.open()
 
     def __call__(self, *args, **kargs):
         try:

@@ -1,2 +1,2 @@
 python-gnupg
-PyGObject
+kivy
